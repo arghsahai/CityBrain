@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<routes>
+
+    <!-- ========================= -->
+    <!-- Vehicle type              -->
+    <!-- ========================= -->
+
+    <vType
+        id="car"
+        accel="2.6"
+        decel="4.5"
+        sigma="0.5"
+        length="5"
+        minGap="2.5"
+        maxSpeed="13.9"
+    />
+
+
+    <!-- ========================= -->
+    <!-- Routes                    -->
+    <!-- ========================= -->
+
+    <route
+        id="route1"
+        edges="E1 E2"
+    />
+
+    <route
+        id="route2"
+        edges="E3 E4"
+    />
+
+    <route
+        id="route3"
+        edges="E5 E6"
+    />
+
+    <route
+        id="route4"
+        edges="E7 E8"
+    />
+
+    <route
+        id="route5"
+        edges="E9 E10"
+    />
+
+    <route
+        id="route6"
+        edges="E11 E12"
+    />
+
+
+    <!-- ========================= -->
+    <!-- Continuous traffic        -->
+    <!-- ========================= -->
+
+    <flow
+        id="flow1"
+        type="car"
+        route="route1"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+    <flow
+        id="flow2"
+        type="car"
+        route="route2"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+    <flow
+        id="flow3"
+        type="car"
+        route="route3"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+    <flow
+        id="flow4"
+        type="car"
+        route="route4"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+    <flow
+        id="flow5"
+        type="car"
+        route="route5"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+    <flow
+        id="flow6"
+        type="car"
+        route="route6"
+        begin="0"
+        end="100"
+        period="5"
+    />
+
+</routes>

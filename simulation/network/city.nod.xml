@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<nodes>
+
+    <node id="J1" x="0" y="0"/>
+    <node id="J2" x="100" y="0"/>
+    <node id="J3" x="200" y="0"/>
+
+    <node id="J4" x="0" y="100"/>
+    <node id="J5" x="100" y="100"/>
+    <node id="J6" x="200" y="100"/>
+
+    <node id="J7" x="0" y="200"/>
+    <node id="J8" x="100" y="200"/>
+    <node id="J9" x="200" y="200"/>
+
+</nodes>
