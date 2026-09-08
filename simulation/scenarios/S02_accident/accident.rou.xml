@@ -2,6 +2,7 @@
 
 <routes>
 
+    <!-- Normal road vehicles -->
     <vType
         id="car"
         accel="2.6"
@@ -12,6 +13,7 @@
         maxSpeed="13.9"
     />
 
+    <!-- Emergency ambulance -->
     <vType
         id="ambulance"
         accel="3.0"
@@ -23,6 +25,7 @@
         color="1,0,0"
     />
 
+    <!-- Vehicle used to create the accident blockage -->
     <vType
         id="accidentVehicle"
         accel="2.6"
@@ -34,6 +37,11 @@
         color="0,0,0"
     />
 
+
+    <!-- ========================================================= -->
+    <!-- NORMAL ROUTES                                               -->
+    <!-- ========================================================= -->
+
     <route id="normalRoute1" edges="E1 E3"/>
     <route id="normalRoute2" edges="E13 E5"/>
     <route id="normalRoute3" edges="E17 E19"/>
@@ -44,7 +52,20 @@
     <route id="normalRoute8" edges="E24 E8"/>
     <route id="normalRoute9" edges="E15 E9"/>
 
-    <route id="accidentRoute" edges="E3"/>
+
+    <!-- ========================================================= -->
+    <!-- ACCIDENT ROUTE                                              -->
+    <!-- ========================================================= -->
+
+    <route
+        id="accidentRoute"
+        edges="E3"
+    />
+
+
+    <!-- ========================================================= -->
+    <!-- NORMAL TRAFFIC FLOWS                                        -->
+    <!-- ========================================================= -->
 
     <flow
         id="traffic1"
@@ -82,13 +103,33 @@
         vehsPerHour="250"
     />
 
+
+    <!-- ========================================================= -->
+    <!-- CITYBRAIN AMBULANCE                                        -->
+    <!-- ========================================================= -->
+    
+    <!--
+        The ambulance becomes available when the accident occurs.
+        CityBrain will detect it through TraCI.
+    -->
+
     <vehicle
         id="ambulance0"
         type="ambulance"
         route="normalRoute1"
-        depart="100"
+        depart="300"
         departSpeed="max"
     />
+
+
+    <!-- ========================================================= -->
+    <!-- ACCIDENT BLOCKER                                           -->
+    <!-- ========================================================= -->
+
+    <!--
+        This vehicle physically blocks E3.
+        It stops at position 40 and remains there for 1500 seconds.
+    -->
 
     <vehicle
         id="accident_blocker"
