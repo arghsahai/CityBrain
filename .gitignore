@@ -10,7 +10,7 @@ __pycache__/
 
 *.log
 
-*.net.xml
+
 
 simulation/output/
 data/output/
