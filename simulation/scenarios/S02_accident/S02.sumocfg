@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <input>
+        <net-file value="../../network/city.net.xml"/>
+        <route-files value="accident.rou.xml"/>
+    </input>
+
+    <time>
+        <begin value="0"/>
+        <end value="1800"/>
+    </time>
+
+</configuration>

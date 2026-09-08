@@ -23,6 +23,17 @@
         color="1,0,0"
     />
 
+    <vType
+        id="accidentVehicle"
+        accel="2.6"
+        decel="4.5"
+        sigma="0.5"
+        length="5"
+        minGap="2.5"
+        maxSpeed="13.9"
+        color="0,0,0"
+    />
+
     <route id="normalRoute1" edges="E1 E3"/>
     <route id="normalRoute2" edges="E13 E5"/>
     <route id="normalRoute3" edges="E17 E19"/>
@@ -32,6 +43,8 @@
     <route id="normalRoute7" edges="E20 E6"/>
     <route id="normalRoute8" edges="E24 E8"/>
     <route id="normalRoute9" edges="E15 E9"/>
+
+    <route id="accidentRoute" edges="E3"/>
 
     <flow
         id="traffic1"
@@ -76,5 +89,20 @@
         depart="100"
         departSpeed="max"
     />
+
+    <vehicle
+        id="accident_blocker"
+        type="accidentVehicle"
+        route="accidentRoute"
+        depart="300"
+        departPos="40"
+        departSpeed="0"
+    >
+        <stop
+            lane="E3_0"
+            endPos="50"
+            duration="1500"
+        />
+    </vehicle>
 
 </routes>
