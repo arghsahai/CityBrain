@@ -4,11 +4,12 @@ import traci
 
 from citybrain.core.vehicle_state import VehicleState
 from citybrain.core.city_state import CityState
+from citybrain.core.traffic_perception import build_road_state
 
 
-# --------------------------------------------------
-# 1. Find SUMO
-# --------------------------------------------------
+# ============================================================
+# 1. FIND SUMO
+# ============================================================
 
 SUMO_HOME = os.environ.get("SUMO_HOME")
 
@@ -17,9 +18,9 @@ if not SUMO_HOME:
     sys.exit(1)
 
 
-# --------------------------------------------------
-# 2. SUMO configuration
-# --------------------------------------------------
+# ============================================================
+# 2. SUMO CONFIGURATION
+# ============================================================
 
 CONFIG_FILE = os.path.join(
     "simulation",
@@ -28,9 +29,9 @@ CONFIG_FILE = os.path.join(
 )
 
 
-# --------------------------------------------------
-# 3. SUMO executable
-# --------------------------------------------------
+# ============================================================
+# 3. SUMO EXECUTABLE
+# ============================================================
 
 SUMO_BINARY = os.path.join(
     SUMO_HOME,
@@ -39,11 +40,11 @@ SUMO_BINARY = os.path.join(
 )
 
 
-# --------------------------------------------------
-# 4. Start SUMO
-# --------------------------------------------------
+# ============================================================
+# 4. START SUMO
+# ============================================================
 
-print("Starting SUMO...")
+print("\nStarting SUMO...")
 
 traci.start([
     SUMO_BINARY,
@@ -54,31 +55,52 @@ traci.start([
 print("CityBrain connected to SUMO!")
 
 
-# --------------------------------------------------
-# 5. Create central CityState
-# --------------------------------------------------
+# ============================================================
+# 5. CREATE CENTRAL CITY STATE
+# ============================================================
 
 city_state = CityState()
 
 
-# --------------------------------------------------
-# 6. Run simulation
-# --------------------------------------------------
+# ============================================================
+# 6. GET ROAD IDs
+# ============================================================
+
+road_ids = traci.edge.getIDList()
+
+# Remove SUMO internal junction edges
+road_ids = [
+    road_id
+    for road_id in road_ids
+    if not road_id.startswith(":")
+]
+
+
+# ============================================================
+# 7. RUN SIMULATION
+# ============================================================
 
 for step in range(20):
 
+    # --------------------------------------------------------
     # Advance SUMO by one simulation step
+    # --------------------------------------------------------
+
     traci.simulationStep()
 
-    # Get all vehicles currently inside SUMO
+
+    # ========================================================
+    # VEHICLE STATE
+    # ========================================================
+
     vehicle_ids = traci.vehicle.getIDList()
 
-    # Store VehicleState objects for this step
     vehicles = []
 
-    # --------------------------------------------------
-    # 7. Read vehicle information from SUMO
-    # --------------------------------------------------
+
+    # --------------------------------------------------------
+    # Read vehicle information from SUMO
+    # --------------------------------------------------------
 
     for vehicle_id in vehicle_ids:
 
@@ -91,20 +113,21 @@ for step in range(20):
             acceleration=traci.vehicle.getAcceleration(vehicle_id)
         )
 
-        # Add to temporary list
         vehicles.append(vehicle)
 
-        # Update central CityState
+        # Store/update vehicle in CityState
         city_state.update_vehicle(vehicle)
 
 
-    # --------------------------------------------------
-    # 8. Remove vehicles that left the simulation
-    # --------------------------------------------------
+    # ========================================================
+    # REMOVE VEHICLES THAT LEFT THE SIMULATION
+    # ========================================================
 
     current_vehicle_ids = set(vehicle_ids)
 
-    tracked_vehicle_ids = set(city_state.vehicles.keys())
+    tracked_vehicle_ids = set(
+        city_state.vehicles.keys()
+    )
 
     removed_vehicle_ids = (
         tracked_vehicle_ids - current_vehicle_ids
@@ -115,34 +138,191 @@ for step in range(20):
         city_state.remove_vehicle(vehicle_id)
 
 
-    # --------------------------------------------------
-    # 9. Display current CityState
-    # --------------------------------------------------
+    # ========================================================
+    # ROAD STATE
+    # ========================================================
 
-    print(f"\n===== STEP {step} =====")
+    for road_id in road_ids:
+
+        try:
+
+            road_state = build_road_state(
+                traci,
+                road_id
+            )
+
+            city_state.update_road(road_state)
+
+        except Exception as e:
+
+            print(
+                f"Could not read road {road_id}: {e}"
+            )
+
+
+    # ========================================================
+    # CITY LEVEL STATISTICS
+    # ========================================================
+
+    # Calculate average speed of all vehicles
+    if vehicles:
+
+        average_vehicle_speed = (
+            sum(vehicle.speed for vehicle in vehicles)
+            / len(vehicles)
+        )
+
+    else:
+
+        average_vehicle_speed = 0.0
+
+
+    # Count roads according to congestion level
+    high_congestion_roads = 0
+    medium_congestion_roads = 0
+    low_congestion_roads = 0
+
+    for road in city_state.roads.values():
+
+        if road.congestion == "HIGH":
+
+            high_congestion_roads += 1
+
+        elif road.congestion == "MEDIUM":
+
+            medium_congestion_roads += 1
+
+        elif road.congestion == "LOW":
+
+            low_congestion_roads += 1
+
+
+    # ========================================================
+    # DISPLAY CITYBRAIN STATE
+    # ========================================================
+
+    print("\n")
+    print("=" * 70)
+    print("                    CITYBRAIN SIMULATION")
+    print(f"                           STEP {step}")
+    print("=" * 70)
+
+
+    # ========================================================
+    # CITY SUMMARY
+    # ========================================================
+
+    print("\nCITY SUMMARY")
+    print("-" * 70)
 
     print(
-        f"Total vehicles: {city_state.vehicle_count()}"
+        f"  Vehicles currently in simulation : "
+        f"{city_state.vehicle_count()}"
     )
 
     print(
-        f"CityState contains: "
-        f"{city_state.vehicle_count()} vehicles"
+        f"  Roads currently tracked          : "
+        f"{city_state.road_count()}"
+    )
+
+    print(
+        f"  Average vehicle speed            : "
+        f"{average_vehicle_speed:.2f} m/s"
+    )
+
+    print(
+        f"  HIGH congestion roads            : "
+        f"{high_congestion_roads}"
+    )
+
+    print(
+        f"  MEDIUM congestion roads          : "
+        f"{medium_congestion_roads}"
+    )
+
+    print(
+        f"  LOW congestion roads             : "
+        f"{low_congestion_roads}"
     )
 
 
-    # --------------------------------------------------
-    # 10. Display first 3 vehicles
-    # --------------------------------------------------
+    # ========================================================
+    # VEHICLE STATES
+    # ========================================================
+
+    print("\nVEHICLE STATES")
+    print("-" * 70)
+
+    # We only DISPLAY the first 3 vehicles.
+    # CityState still stores ALL vehicles.
 
     for vehicle in vehicles[:3]:
 
-        print(f"\n{vehicle}")
+        print(
+            f"  ID: {vehicle.vehicle_id:<10} | "
+            f"Edge: {vehicle.edge:<6} | "
+            f"Speed: {vehicle.speed:>6.2f} m/s | "
+            f"Lane: {vehicle.lane}"
+        )
+
+        print(
+            f"       Position: "
+            f"({vehicle.position[0]:>7.2f}, "
+            f"{vehicle.position[1]:>7.2f}) | "
+            f"Acceleration: "
+            f"{vehicle.acceleration:>6.2f} m/s²"
+        )
 
 
-# --------------------------------------------------
-# 11. Close SUMO
-# --------------------------------------------------
+    # ========================================================
+    # ROAD STATES
+    # ========================================================
+
+    print("\nROAD STATES")
+    print("-" * 70)
+
+    print(
+        f"  {'Road':<8}"
+        f"{'Vehicles':>10}"
+        f"{'Avg Speed':>13}"
+        f"{'Occupancy':>13}"
+        f"{'Travel Time':>15}"
+        f"{'Congestion':>14}"
+    )
+
+    print("-" * 70)
+
+
+    # Display first 5 roads
+    for road_id, road in list(
+        city_state.roads.items()
+    )[:5]:
+
+        if road.travel_time == float("inf"):
+
+            travel_time = "INF"
+
+        else:
+
+            travel_time = f"{road.travel_time:.2f} s"
+
+
+        print(
+            f"  {road.road_id:<8}"
+            f"{road.vehicle_count:>10}"
+            f"{road.average_speed:>13.2f}"
+            f"{road.occupancy:>13.2f}"
+            f"{travel_time:>15}"
+            f"{road.congestion:>14}"
+        )
+
+
+    print("=" * 70)
+
+
+# ============================================================
+# 8. CLOSE SUMO
+# ============================================================
 
 traci.close()
 
