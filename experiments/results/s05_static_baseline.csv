@@ -1,0 +1,2 @@
+scenario,emergency_id,accident_time,blockage_time,initial_route,initial_eta,ambulance_completion_time,actual_response_time,number_of_replans,route_changed,completed
+S05_static_baseline,EM001,300,307,E13 -> E5 -> E7 -> E23,25.3169,627,327,0,False,True

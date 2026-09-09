@@ -1,4 +1,7 @@
 import copy
+import csv
+import os
+
 import traci
 
 from citybrain.core.city_state import CityState
@@ -9,25 +12,150 @@ from citybrain.planner.emergency_planner import EmergencyPlanner
 from citybrain.planner.replanner import Replanner
 
 
+# ================================================================
+# SUMO CONFIGURATION
+# ================================================================
+
 SUMO_BINARY = "sumo"
-SUMO_CONFIG = "simulation/scenarios/S02_accident/S02.sumocfg"
+
+SUMO_CONFIG = (
+    "simulation/scenarios/S05_dynamic_blockage/S05.sumocfg"
+)
+
+
+# ================================================================
+# CITYBRAIN TIMING
+# ================================================================
 
 ACCIDENT_TIME = 300
-ACCIDENT_EDGE = "E3"
 
-PLAN_RETRY_INTERVAL = 5
-REPLAN_INTERVAL = 30
+DYNAMIC_BLOCKAGE_TIME = 307
+
+PLAN_RETRY_INTERVAL = 1
+
+REPLAN_INTERVAL = 10
 
 ETA_CHANGE_THRESHOLD = 0.5
 
 
-def update_city_state(city_state):
+# ================================================================
+# ROAD CONDITIONS
+# ================================================================
+
+ACCIDENT_EDGE = "E3"
+
+DYNAMIC_BLOCKAGE_EDGE = "E7"
+
+
+# ================================================================
+# EXPERIMENT LOGGING
+# ================================================================
+
+RESULTS_DIR = "experiments/results"
+
+RESULTS_FILE = os.path.join(
+    RESULTS_DIR,
+    "s05_dynamic_replanning.csv"
+)
+
+EXPERIMENT_FIELDS = [
+    "scenario",
+    "emergency_id",
+    "accident_time",
+    "blockage_time",
+    "initial_route",
+    "replanned_route",
+    "initial_eta",
+    "replanned_eta",
+    "replanning_time",
+    "replanning_latency",
+    "ambulance_completion_time",
+    "number_of_replans",
+    "route_changed",
+    "completed",
+]
+
+
+def initialize_experiment_log():
     """
-    Read the current SUMO vehicle state and store it in CityState.
+    Create the experiment results directory and CSV file.
+    A new file is created for every simulation run.
     """
 
+    os.makedirs(
+        RESULTS_DIR,
+        exist_ok=True
+    )
+
+    with open(
+        RESULTS_FILE,
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as file:
+
+        writer = csv.DictWriter(
+            file,
+            fieldnames=EXPERIMENT_FIELDS,
+        )
+
+        writer.writeheader()
+
+
+def write_experiment_result(result):
+    """
+    Append one completed experiment result to the CSV file.
+    """
+
+    os.makedirs(
+        RESULTS_DIR,
+        exist_ok=True
+    )
+
+    file_exists = os.path.exists(
+        RESULTS_FILE
+    )
+
+    with open(
+        RESULTS_FILE,
+        "a",
+        newline="",
+        encoding="utf-8",
+    ) as file:
+
+        writer = csv.DictWriter(
+            file,
+            fieldnames=EXPERIMENT_FIELDS,
+        )
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow(result)
+
+
+def route_to_string(route):
+    """
+    Convert a route list into a readable string.
+    """
+
+    if not route:
+        return ""
+
+    return " -> ".join(route)
+
+
+# ================================================================
+# CITY STATE
+# ================================================================
+
+def update_city_state(city_state):
+
     vehicle_ids = traci.vehicle.getIDList()
-    current_vehicle_ids = set(vehicle_ids)
+
+    current_vehicle_ids = set(
+        vehicle_ids
+    )
 
     for vehicle_id in vehicle_ids:
 
@@ -35,62 +163,99 @@ def update_city_state(city_state):
 
             vehicle = VehicleState(
                 vehicle_id=vehicle_id,
-                edge=traci.vehicle.getRoadID(vehicle_id),
-                speed=traci.vehicle.getSpeed(vehicle_id),
-                position=traci.vehicle.getPosition(vehicle_id),
-                lane=traci.vehicle.getLaneID(vehicle_id),
-                acceleration=traci.vehicle.getAcceleration(vehicle_id),
+                edge=traci.vehicle.getRoadID(
+                    vehicle_id
+                ),
+                speed=traci.vehicle.getSpeed(
+                    vehicle_id
+                ),
+                position=traci.vehicle.getPosition(
+                    vehicle_id
+                ),
+                lane=traci.vehicle.getLaneID(
+                    vehicle_id
+                ),
+                acceleration=traci.vehicle.getAcceleration(
+                    vehicle_id
+                ),
             )
 
-            city_state.update_vehicle(vehicle)
+            city_state.update_vehicle(
+                vehicle
+            )
 
         except traci.TraCIException:
+
             continue
 
     tracked_vehicle_ids = set(
         city_state.vehicles.keys()
     )
 
-    for vehicle_id in tracked_vehicle_ids - current_vehicle_ids:
-        city_state.remove_vehicle(vehicle_id)
+    for vehicle_id in (
+        tracked_vehicle_ids
+        - current_vehicle_ids
+    ):
+
+        city_state.remove_vehicle(
+            vehicle_id
+        )
 
 
-def print_accident_state(current_time):
-    """
-    Print the current state of the accident edge.
-    """
+# ================================================================
+# ROAD STATE
+# ================================================================
 
-    if ACCIDENT_EDGE not in traci.edge.getIDList():
+def print_road_state(
+    current_time,
+    edge_id,
+):
+
+    if edge_id not in (
+        traci.edge.getIDList()
+    ):
+
         return
 
-    vehicle_count = traci.edge.getLastStepVehicleNumber(
-        ACCIDENT_EDGE
+    vehicle_count = (
+        traci.edge.getLastStepVehicleNumber(
+            edge_id
+        )
     )
 
-    mean_speed = traci.edge.getLastStepMeanSpeed(
-        ACCIDENT_EDGE
+    mean_speed = (
+        traci.edge.getLastStepMeanSpeed(
+            edge_id
+        )
     )
 
-    occupancy = traci.edge.getLastStepOccupancy(
-        ACCIDENT_EDGE
+    occupancy = (
+        traci.edge.getLastStepOccupancy(
+            edge_id
+        )
     )
 
     print(
         f"[{current_time:.0f}s] "
-        f"{ACCIDENT_EDGE}: "
+        f"{edge_id}: "
         f"vehicles={vehicle_count}, "
         f"speed={mean_speed:.2f}, "
         f"occupancy={occupancy:.2f}"
     )
 
 
-def print_citybrain_state(planner_state):
-    """
-    Print the state that CityBrain gives to the planner.
-    """
+# ================================================================
+# CITYBRAIN STATE
+# ================================================================
+
+def print_citybrain_state(
+    planner_state
+):
 
     print()
-    print("---------- CITYBRAIN STATE ----------")
+    print(
+        "---------- CITYBRAIN STATE ----------"
+    )
 
     print(
         f"Ambulances: "
@@ -105,63 +270,96 @@ def print_citybrain_state(planner_state):
     blocked_edges = [
         edge
         for edge, data in planner_state.get(
-            "roads", {}
+            "roads",
+            {}
         ).items()
         if data.get("blocked")
     ]
 
     print(
-        f"Blocked edges: {blocked_edges}"
+        f"Blocked edges: "
+        f"{blocked_edges}"
     )
 
-    print("-------------------------------------")
+    print(
+        "-------------------------------------"
+    )
+
     print()
 
 
-def print_plan(plan_name, emergency, plan):
-    """
-    Print an emergency plan.
-    """
+# ================================================================
+# PLAN DISPLAY
+# ================================================================
+
+def print_plan(
+    plan_name,
+    emergency,
+    plan,
+):
 
     print()
-    print("==============================================")
-    print(f"       {plan_name}")
-    print("==============================================")
-
     print(
-        f"Emergency : {emergency.emergency_id}"
+        "=============================================="
     )
 
     print(
-        f"Ambulance : {plan.ambulance_id}"
+        f"       {plan_name}"
     )
 
     print(
-        f"Hospital  : {plan.hospital_id}"
+        "=============================================="
     )
 
     print(
-        f"Route     : {' -> '.join(plan.route)}"
+        f"Emergency : "
+        f"{emergency.emergency_id}"
     )
 
     print(
-        f"ETA       : {plan.eta:.2f} seconds"
+        f"Ambulance : "
+        f"{plan.ambulance_id}"
     )
 
     print(
-        f"Signal    : {plan.signal_priority}"
+        f"Hospital  : "
+        f"{plan.hospital_id}"
     )
 
-    print("==============================================")
+    print(
+        f"Route     : "
+        f"{route_to_string(plan.route)}"
+    )
+
+    print(
+        f"ETA       : "
+        f"{plan.eta:.2f} seconds"
+    )
+
+    print(
+        f"Signal    : "
+        f"{plan.signal_priority}"
+    )
+
+    print(
+        "=============================================="
+    )
+
     print()
 
 
-def get_ambulance_edge(ambulance_id):
-    """
-    Return the ambulance's current SUMO edge.
-    """
+# ================================================================
+# AMBULANCE POSITION
+# ================================================================
 
-    if ambulance_id not in traci.vehicle.getIDList():
+def get_ambulance_edge(
+    ambulance_id
+):
+
+    if ambulance_id not in (
+        traci.vehicle.getIDList()
+    ):
+
         return None
 
     try:
@@ -175,23 +373,14 @@ def get_ambulance_edge(ambulance_id):
         return None
 
 
-def make_executable_route(ambulance_id, planned_route):
-    """
-    Convert a CityBrain planned route into a route that
-    can actually be assigned from the ambulance's
-    current SUMO position.
+# ================================================================
+# EXECUTABLE ROUTE
+# ================================================================
 
-    Example:
-
-        Planned:
-        E13 -> E5 -> E19 -> E11
-
-        Ambulance currently on:
-        E5
-
-        Executable:
-        E5 -> E19 -> E11
-    """
+def make_executable_route(
+    ambulance_id,
+    planned_route,
+):
 
     current_edge = get_ambulance_edge(
         ambulance_id
@@ -200,32 +389,36 @@ def make_executable_route(ambulance_id, planned_route):
     if current_edge is None:
 
         print(
-            f"[CityBrain] Could not determine "
+            "[CityBrain] Could not determine "
             f"current edge of {ambulance_id}."
         )
 
         return None
 
     print(
-        f"[CityBrain] Ambulance current edge: "
+        "[CityBrain] Ambulance current edge: "
         f"{current_edge}"
     )
 
-    planned_route = list(planned_route)
+    planned_route = list(
+        planned_route
+    )
 
     if current_edge in planned_route:
 
-        current_index = planned_route.index(
-            current_edge
+        current_index = (
+            planned_route.index(
+                current_edge
+            )
         )
 
-        executable_route = planned_route[
-            current_index:
-        ]
+        executable_route = (
+            planned_route[current_index:]
+        )
 
         print(
             "[CityBrain] Executable route: "
-            f"{' -> '.join(executable_route)}"
+            f"{route_to_string(executable_route)}"
         )
 
         return executable_route
@@ -238,28 +431,34 @@ def make_executable_route(ambulance_id, planned_route):
     return None
 
 
-def apply_ambulance_route(plan):
-    """
-    Apply the selected CityBrain route to the ambulance.
+# ================================================================
+# APPLY AMBULANCE ROUTE
+# ================================================================
 
-    The route is adjusted according to the ambulance's
-    current SUMO edge before being assigned.
-    """
+def apply_ambulance_route(
+    plan
+):
 
-    ambulance_id = plan.ambulance_id
+    ambulance_id = (
+        plan.ambulance_id
+    )
 
-    if ambulance_id not in traci.vehicle.getIDList():
+    if ambulance_id not in (
+        traci.vehicle.getIDList()
+    ):
 
         print(
-            f"[CityBrain] Ambulance {ambulance_id} "
-            f"is no longer in SUMO."
+            "[CityBrain] Ambulance "
+            f"{ambulance_id} is no longer in SUMO."
         )
 
         return False
 
-    executable_route = make_executable_route(
-        ambulance_id,
-        plan.route,
+    executable_route = (
+        make_executable_route(
+            ambulance_id,
+            plan.route,
+        )
     )
 
     if not executable_route:
@@ -279,13 +478,14 @@ def apply_ambulance_route(plan):
         )
 
         print()
+
         print(
-            f"[CityBrain] Route assigned to "
+            "[CityBrain] Route assigned to "
             f"{ambulance_id}:"
         )
 
         print(
-            f"    {' -> '.join(executable_route)}"
+            f"    {route_to_string(executable_route)}"
         )
 
         print()
@@ -295,40 +495,172 @@ def apply_ambulance_route(plan):
     except traci.TraCIException as error:
 
         print(
-            f"[CityBrain] Could not assign "
+            "[CityBrain] Could not assign "
             f"ambulance route: {error}"
         )
 
         return False
 
 
-def route_changed(old_route, new_route):
-    """
-    Check whether the emergency route changed.
-    """
+# ================================================================
+# PLAN COMPARISON
+# ================================================================
 
-    return list(old_route) != list(new_route)
-
-
-def eta_changed(old_eta, new_eta):
-    """
-    Check whether the estimated travel time changed
-    meaningfully.
-    """
+def route_changed(
+    old_route,
+    new_route,
+):
 
     return (
-        abs(old_eta - new_eta)
+        list(old_route)
+        != list(new_route)
+    )
+
+
+def eta_changed(
+    old_eta,
+    new_eta,
+):
+
+    return (
+        abs(
+            old_eta
+            - new_eta
+        )
         >= ETA_CHANGE_THRESHOLD
     )
 
 
+# ================================================================
+# EXPERIMENT RESULT
+# ================================================================
+
+def create_experiment_result(
+    emergency,
+    initial_route,
+    replanned_route,
+    initial_eta,
+    replanned_eta,
+    replanning_time,
+    replanning_latency,
+    ambulance_completion_time,
+    number_of_replans,
+    route_was_changed,
+    completed,
+):
+
+    return {
+        "scenario": "S05_dynamic_blockage",
+
+        "emergency_id":
+            emergency.emergency_id,
+
+        "accident_time":
+            ACCIDENT_TIME,
+
+        "blockage_time":
+            DYNAMIC_BLOCKAGE_TIME,
+
+        "initial_route":
+            route_to_string(
+                initial_route
+            ),
+
+        "replanned_route":
+            route_to_string(
+                replanned_route
+            ),
+
+        "initial_eta":
+            (
+                ""
+                if initial_eta is None
+                else f"{initial_eta:.4f}"
+            ),
+
+        "replanned_eta":
+            (
+                ""
+                if replanned_eta is None
+                else f"{replanned_eta:.4f}"
+            ),
+
+        "replanning_time":
+            (
+                ""
+                if replanning_time is None
+                else f"{replanning_time:.0f}"
+            ),
+
+        "replanning_latency":
+            (
+                ""
+                if replanning_latency is None
+                else f"{replanning_latency:.0f}"
+            ),
+
+        "ambulance_completion_time":
+            (
+                ""
+                if ambulance_completion_time is None
+                else f"{ambulance_completion_time:.0f}"
+            ),
+
+        "number_of_replans":
+            number_of_replans,
+
+        "route_changed":
+            route_was_changed,
+
+        "completed":
+            completed,
+    }
+
+
+# ================================================================
+# MAIN SIMULATION
+# ================================================================
+
 def run_simulation():
 
     print()
-    print("==============================================")
-    print("       CITYBRAIN EMERGENCY SIMULATION")
-    print("==============================================")
+    print(
+        "=============================================="
+    )
+
+    print(
+        "       CITYBRAIN DYNAMIC EMERGENCY"
+    )
+
+    print(
+        "       RESPONSE SIMULATION"
+    )
+
+    print(
+        "=============================================="
+    )
+
     print()
+
+    # ============================================================
+    # INITIALIZE EXPERIMENT LOG
+    # ============================================================
+
+    initialize_experiment_log()
+
+    print(
+        "[Experiment] Results will be saved to:"
+    )
+
+    print(
+        f"    {RESULTS_FILE}"
+    )
+
+    print()
+
+    # ============================================================
+    # CITYBRAIN OBJECTS
+    # ============================================================
 
     city_state = CityState()
 
@@ -343,15 +675,51 @@ def run_simulation():
         emergency_type="ROAD_ACCIDENT",
     )
 
-    initial_plan = None
+    current_plan = None
+
+    # ============================================================
+    # EXPERIMENT VARIABLES
+    # ============================================================
 
     accident_detected = False
 
-    last_plan_attempt = -PLAN_RETRY_INTERVAL
+    dynamic_blockage_detected = False
 
-    last_replan_time = -REPLAN_INTERVAL
+    emergency_finished = False
+
+    result_written = False
+
+    initial_route = []
+
+    replanned_route = []
+
+    initial_eta = None
+
+    replanned_eta = None
+
+    replanning_time = None
+
+    replanning_latency = None
+
+    ambulance_completion_time = None
+
+    number_of_replans = 0
+
+    route_was_changed = False
+
+    last_plan_attempt = (
+        -PLAN_RETRY_INTERVAL
+    )
+
+    last_replan_time = (
+        -REPLAN_INTERVAL
+    )
 
     try:
+
+        # ========================================================
+        # START SUMO
+        # ========================================================
 
         traci.start(
             [
@@ -362,6 +730,14 @@ def run_simulation():
                 "1",
             ]
         )
+
+        print(
+            "[CityBrain] SUMO simulation started."
+        )
+
+        # ========================================================
+        # SIMULATION LOOP
+        # ========================================================
 
         while (
             traci.simulation.getMinExpectedNumber()
@@ -378,6 +754,10 @@ def run_simulation():
                 city_state
             )
 
+            # ====================================================
+            # CITY STATE MONITORING
+            # ====================================================
+
             if current_time % 30 == 0:
 
                 print(
@@ -386,12 +766,13 @@ def run_simulation():
                     f"{city_state.vehicle_count()}"
                 )
 
-            # ==================================================
+            # ====================================================
             # ACCIDENT DETECTION
-            # ==================================================
+            # ====================================================
 
             if (
-                current_time >= ACCIDENT_TIME
+                current_time
+                >= ACCIDENT_TIME
                 and not accident_detected
             ):
 
@@ -401,9 +782,11 @@ def run_simulation():
                 print(
                     "****************************************"
                 )
+
                 print(
                     "       ACCIDENT DETECTED"
                 )
+
                 print(
                     "****************************************"
                 )
@@ -418,26 +801,28 @@ def run_simulation():
                     f"{ACCIDENT_EDGE}"
                 )
 
-                print_accident_state(
-                    current_time
+                print_road_state(
+                    current_time,
+                    ACCIDENT_EDGE,
                 )
 
                 print()
 
                 print(
-                    "CityBrain is waiting for an "
-                    "available ambulance..."
+                    "CityBrain is creating "
+                    "the initial emergency plan..."
                 )
 
                 print()
 
-            # ==================================================
+            # ====================================================
             # INITIAL PLAN P0
-            # ==================================================
+            # ====================================================
 
             if (
                 accident_detected
-                and initial_plan is None
+                and current_plan is None
+                and not emergency_finished
                 and (
                     current_time
                     - last_plan_attempt
@@ -445,7 +830,9 @@ def run_simulation():
                 )
             ):
 
-                last_plan_attempt = current_time
+                last_plan_attempt = (
+                    current_time
+                )
 
                 blocked_edges = {
                     ACCIDENT_EDGE
@@ -459,17 +846,16 @@ def run_simulation():
                 ambulances = (
                     planner_state.get(
                         "ambulances",
-                        [],
+                        []
                     )
                 )
 
                 if not ambulances:
 
                     print(
-                        f"[CityBrain] "
+                        "[CityBrain] "
                         f"No ambulance available "
-                        f"at {current_time:.0f}s. "
-                        f"Retrying P0 later."
+                        f"at {current_time:.0f}s."
                     )
 
                 else:
@@ -506,52 +892,198 @@ def run_simulation():
 
                         if route_applied:
 
+                            current_plan = (
+                                initial_plan
+                            )
+
+                            initial_route = list(
+                                initial_plan.route
+                            )
+
+                            initial_eta = (
+                                initial_plan.eta
+                            )
+
                             last_replan_time = (
                                 current_time
                             )
 
                             print(
                                 "[CityBrain] "
-                                "P0 successfully "
-                                "dispatched."
+                                "P0 successfully dispatched."
                             )
 
                         else:
 
                             print(
                                 "[CityBrain] "
-                                "P0 was created but "
-                                "the route could not "
-                                "be assigned."
+                                "P0 was created, "
+                                "but could not be "
+                                "physically dispatched."
                             )
 
-                    else:
+            # ====================================================
+            # DYNAMIC BLOCKAGE
+            # ====================================================
 
-                        print(
-                            "[CityBrain] "
-                            "P0 could not be "
-                            "created. "
-                            "CityBrain will retry "
-                            "later."
-                        )
-
-            # ==================================================
-            # DYNAMIC REPLANNING
-            # ==================================================
+            force_replan = False
 
             if (
                 accident_detected
-                and initial_plan is not None
+                and current_time
+                >= DYNAMIC_BLOCKAGE_TIME
+                and not dynamic_blockage_detected
+            ):
+
+                dynamic_blockage_detected = True
+
+                force_replan = True
+
+                print()
+                print(
+                    "################################################"
+                )
+
+                print(
+                    "       DYNAMIC ROAD BLOCKAGE DETECTED"
+                )
+
+                print(
+                    "################################################"
+                )
+
+                print(
+                    f"Time : "
+                    f"{current_time:.0f}s"
+                )
+
+                print(
+                    f"Blocked road : "
+                    f"{DYNAMIC_BLOCKAGE_EDGE}"
+                )
+
+                print_road_state(
+                    current_time,
+                    DYNAMIC_BLOCKAGE_EDGE,
+                )
+
+                print()
+
+                print(
+                    "[CityBrain] "
+                    "The current emergency plan "
+                    "may now be invalid."
+                )
+
+                print(
+                    "[CityBrain] "
+                    "FORCING IMMEDIATE REPLANNING."
+                )
+
+                print()
+
+            # ====================================================
+            # CHECK AMBULANCE
+            # ====================================================
+
+            ambulance_present = False
+
+            if current_plan is not None:
+
+                ambulance_present = (
+                    current_plan.ambulance_id
+                    in traci.vehicle.getIDList()
+                )
+
+                if not ambulance_present:
+
+                    if not emergency_finished:
+
+                        ambulance_completion_time = (
+                            current_time
+                        )
+
+                        print()
+                        print(
+                            "[CityBrain] Ambulance "
+                            f"{current_plan.ambulance_id} "
+                            "has completed or left "
+                            "the SUMO simulation."
+                        )
+
+                        print(
+                            "[CityBrain] "
+                            "Emergency response "
+                            "execution finished."
+                        )
+
+                        print()
+
+                        emergency_finished = True
+
+                        # ========================================
+                        # WRITE FINAL EXPERIMENT RESULT
+                        # ========================================
+
+                        result = (
+                            create_experiment_result(
+                                emergency,
+                                initial_route,
+                                replanned_route,
+                                initial_eta,
+                                replanned_eta,
+                                replanning_time,
+                                replanning_latency,
+                                ambulance_completion_time,
+                                number_of_replans,
+                                route_was_changed,
+                                True,
+                            )
+                        )
+
+                        write_experiment_result(
+                            result
+                        )
+
+                        result_written = True
+
+                        print(
+                            "[Experiment] "
+                            "S05 result saved."
+                        )
+
+            # ====================================================
+            # DYNAMIC REPLANNING
+            # ====================================================
+
+            if (
+                accident_detected
+                and current_plan is not None
+                and ambulance_present
+                and not emergency_finished
                 and (
-                    current_time
-                    - last_replan_time
-                    >= REPLAN_INTERVAL
+                    force_replan
+                    or (
+                        current_time
+                        - last_replan_time
+                        >= REPLAN_INTERVAL
+                    )
                 )
             ):
+
+                last_replan_time = (
+                    current_time
+                )
 
                 blocked_edges = {
                     ACCIDENT_EDGE
                 }
+
+                if dynamic_blockage_detected:
+
+                    blocked_edges.add(
+                        DYNAMIC_BLOCKAGE_EDGE
+                    )
 
                 planner_state = build_state(
                     city_state,
@@ -560,23 +1092,24 @@ def run_simulation():
 
                 print()
                 print(
-                    f"[CityBrain] Re-evaluating "
-                    f"emergency plan at "
-                    f"{current_time:.0f}s..."
+                    "[CityBrain] "
+                    f"Re-evaluating emergency plan "
+                    f"at {current_time:.0f}s..."
                 )
 
-                # Preserve the old plan.
+                print_citybrain_state(
+                    planner_state
+                )
+
                 previous_plan = (
                     copy.deepcopy(
-                        initial_plan
+                        current_plan
                     )
                 )
 
-                # Give the replanner a copy so that
-                # the current plan is not overwritten.
                 candidate_plan = (
                     copy.deepcopy(
-                        initial_plan
+                        current_plan
                     )
                 )
 
@@ -587,157 +1120,207 @@ def run_simulation():
                     )
                 )
 
-                if updated_plan is not None:
+                if updated_plan is None:
 
-                    print_plan(
-                        "UPDATED EMERGENCY PLAN",
-                        emergency,
-                        updated_plan,
+                    print(
+                        "[CityBrain] "
+                        "No valid updated plan available."
                     )
 
-                    route_was_changed = (
-                        route_changed(
-                            previous_plan.route,
-                            updated_plan.route,
-                        )
+                    continue
+
+                print_plan(
+                    "UPDATED EMERGENCY PLAN",
+                    emergency,
+                    updated_plan,
+                )
+
+                route_was_changed_now = (
+                    route_changed(
+                        previous_plan.route,
+                        updated_plan.route,
                     )
+                )
 
-                    eta_was_changed = (
-                        eta_changed(
-                            previous_plan.eta,
-                            updated_plan.eta,
-                        )
+                eta_was_changed = (
+                    eta_changed(
+                        previous_plan.eta,
+                        updated_plan.eta,
                     )
+                )
 
-                    # ==========================================
-                    # ROUTE CHANGED
-                    # ==========================================
+                # =================================================
+                # ROUTE CHANGE
+                # =================================================
 
-                    if route_was_changed:
-
-                        print()
-                        print(
-                            "[CityBrain] "
-                            "ROUTE CHANGE DETECTED"
-                        )
-
-                        print(
-                            "Old route : "
-                            f"{' -> '.join(previous_plan.route)}"
-                        )
-
-                        print(
-                            "New route : "
-                            f"{' -> '.join(updated_plan.route)}"
-                        )
-
-                        print()
-
-                        route_applied = (
-                            apply_ambulance_route(
-                                updated_plan
-                            )
-                        )
-
-                        if route_applied:
-
-                            initial_plan = (
-                                updated_plan
-                            )
-
-                            print(
-                                "[CityBrain] "
-                                "New route successfully "
-                                "applied."
-                            )
-
-                        else:
-
-                            print(
-                                "[CityBrain] "
-                                "New route could not "
-                                "be applied."
-                            )
-
-                    # ==========================================
-                    # ETA CHANGED
-                    # ==========================================
-
-                    elif eta_was_changed:
-
-                        print()
-                        print(
-                            "[CityBrain] "
-                            "Route remains the same, "
-                            "but ETA changed."
-                        )
-
-                        print(
-                            f"Old ETA : "
-                            f"{previous_plan.eta:.2f}s"
-                        )
-
-                        print(
-                            f"New ETA : "
-                            f"{updated_plan.eta:.2f}s"
-                        )
-
-                        initial_plan = (
-                            updated_plan
-                        )
-
-                    # ==========================================
-                    # NOTHING CHANGED
-                    # ==========================================
-
-                    else:
-
-                        print()
-                        print(
-                            "[CityBrain] "
-                            "Current emergency plan "
-                            "remains unchanged."
-                        )
-
-                else:
+                if route_was_changed_now:
 
                     print()
                     print(
                         "[CityBrain] "
-                        "No valid updated "
-                        "plan available."
+                        "ROUTE CHANGE DETECTED"
                     )
 
-                last_replan_time = (
-                    current_time
+                    print(
+                        "Old route : "
+                        f"{route_to_string(previous_plan.route)}"
+                    )
+
+                    print(
+                        "New route : "
+                        f"{route_to_string(updated_plan.route)}"
+                    )
+
+                    print()
+
+                    route_applied = (
+                        apply_ambulance_route(
+                            updated_plan
+                        )
+                    )
+
+                    if route_applied:
+
+                        current_plan = (
+                            updated_plan
+                        )
+
+                        number_of_replans += 1
+
+                        if not route_was_changed:
+
+                            replanned_route = list(
+                                updated_plan.route
+                            )
+
+                            replanned_eta = (
+                                updated_plan.eta
+                            )
+
+                            replanning_time = (
+                                current_time
+                            )
+
+                            replanning_latency = (
+                                current_time
+                                - DYNAMIC_BLOCKAGE_TIME
+                            )
+
+                        route_was_changed = True
+
+                        print(
+                            "[CityBrain] "
+                            "NEW ROUTE SUCCESSFULLY "
+                            "APPLIED."
+                        )
+
+                        print(
+                            "[Experiment] "
+                            f"Replan count = "
+                            f"{number_of_replans}"
+                        )
+
+                    else:
+
+                        print(
+                            "[CityBrain] "
+                            "New route could not "
+                            "be applied."
+                        )
+
+                # =================================================
+                # ETA CHANGE
+                # =================================================
+
+                elif eta_was_changed:
+
+                    print()
+
+                    print(
+                        "[CityBrain] "
+                        "Route remains the same, "
+                        "but ETA changed."
+                    )
+
+                    print(
+                        f"Old ETA : "
+                        f"{previous_plan.eta:.2f}s"
+                    )
+
+                    print(
+                        f"New ETA : "
+                        f"{updated_plan.eta:.2f}s"
+                    )
+
+                    current_plan = (
+                        updated_plan
+                    )
+
+                # =================================================
+                # NO CHANGE
+                # =================================================
+
+                else:
+
+                    print()
+
+                    print(
+                        "[CityBrain] "
+                        "Current emergency plan "
+                        "remains unchanged."
+                    )
+
+        # ========================================================
+        # SIMULATION ENDED
+        # ========================================================
+
+        if (
+            not result_written
+            and current_plan is not None
+        ):
+
+            result = (
+                create_experiment_result(
+                    emergency,
+                    initial_route,
+                    replanned_route,
+                    initial_eta,
+                    replanned_eta,
+                    replanning_time,
+                    replanning_latency,
+                    ambulance_completion_time,
+                    number_of_replans,
+                    route_was_changed,
+                    emergency_finished,
                 )
+            )
 
-            # ==================================================
-            # ACCIDENT MONITORING
-            # ==================================================
+            write_experiment_result(
+                result
+            )
 
-            if (
-                accident_detected
-                and current_time % 30 == 0
-            ):
+            result_written = True
 
-                print_accident_state(
-                    current_time
-                )
+            print(
+                "[Experiment] "
+                "Final S05 result saved."
+            )
 
     except KeyboardInterrupt:
 
         print()
+
         print(
-            "[CityBrain] Simulation "
-            "interrupted by user."
+            "[CityBrain] "
+            "Simulation interrupted by user."
         )
 
     except traci.TraCIException as error:
 
         print()
+
         print(
-            f"[CityBrain] TraCI error: "
+            "[CityBrain] TraCI error: "
             f"{error}"
         )
 
@@ -747,19 +1330,26 @@ def run_simulation():
 
             traci.close()
 
-        except (
-            traci.TraCIException,
-            KeyError,
-            ConnectionError,
-        ):
+        except Exception:
 
             pass
 
         print()
+
         print(
             "CityBrain simulation finished."
         )
 
+        print(
+            f"[Experiment] Results file: "
+            f"{RESULTS_FILE}"
+        )
+
+
+# ================================================================
+# ENTRY POINT
+# ================================================================
 
 if __name__ == "__main__":
+
     run_simulation()
