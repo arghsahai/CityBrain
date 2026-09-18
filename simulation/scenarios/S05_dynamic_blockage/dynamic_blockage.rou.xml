@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<routes>
+
+    <!-- ========================================================= -->
+    <!-- Vehicle Types                                             -->
+    <!-- ========================================================= -->
+
+    <vType
+        id="car"
+        accel="2.6"
+        decel="4.5"
+        sigma="0.5"
+        length="5"
+        minGap="2.5"
+        maxSpeed="13.9"
+    />
+
+    <vType
+        id="ambulance"
+        accel="3.0"
+        decel="5.0"
+        sigma="0.2"
+        length="6"
+        minGap="2.5"
+        maxSpeed="20.0"
+        color="1,0,0"
+    />
+
+    <vType
+        id="accidentVehicle"
+        accel="2.6"
+        decel="4.5"
+        sigma="0.5"
+        length="5"
+        minGap="2.5"
+        maxSpeed="13.9"
+        color="0,0,0"
+    />
+
+
+    <!-- ========================================================= -->
+    <!-- Normal Routes                                              -->
+    <!-- ========================================================= -->
+
+    <route id="normalRoute1" edges="E1 E3"/>
+    <route id="normalRoute2" edges="E13 E5"/>
+    <route id="normalRoute3" edges="E17 E19"/>
+    <route id="normalRoute4" edges="E21 E23"/>
+    <route id="normalRoute5" edges="E14 E1"/>
+    <route id="normalRoute6" edges="E18 E2"/>
+    <route id="normalRoute7" edges="E20 E6"/>
+    <route id="normalRoute8" edges="E24 E8"/>
+    <route id="normalRoute9" edges="E15 E9"/>
+
+
+    <!-- ========================================================= -->
+    <!-- Accident Route                                             -->
+    <!-- ========================================================= -->
+
+    <route id="accidentRoute" edges="E3"/>
+
+
+    <!-- ========================================================= -->
+    <!-- Emergency Ambulance Routes                                 -->
+    <!-- ========================================================= -->
+
+    <route
+        id="ambulanceInitialRoute"
+        edges="E13 E5 E7 E23"
+    />
+
+    <route
+        id="dynamicBlockageRoute"
+        edges="E7"
+    />
+
+
+    <!-- ========================================================= -->
+    <!-- Background Traffic                                         -->
+    <!-- ========================================================= -->
+
+    <!--
+        E3 is reserved exclusively for the accident.
+        No background traffic flow uses E3.
+    -->
+
+    <!-- Traffic on E17 -> E19 -->
+    <flow
+        id="traffic1"
+        type="car"
+        route="normalRoute3"
+        begin="0"
+        end="900"
+        vehsPerHour="450"
+    />
+
+    <!-- Traffic toward the hospital through E23 -->
+    <flow
+        id="traffic2"
+        type="car"
+        route="normalRoute4"
+        begin="0"
+        end="900"
+        vehsPerHour="250"
+    />
+
+    <!-- Traffic on E14 -> E1 -->
+    <flow
+        id="traffic3"
+        type="car"
+        route="normalRoute5"
+        begin="0"
+        end="900"
+        vehsPerHour="500"
+    />
+
+    <!-- Additional background traffic on E20 -> E6 -->
+    <flow
+        id="traffic4"
+        type="car"
+        route="normalRoute7"
+        begin="0"
+        end="900"
+        vehsPerHour="200"
+    />
+
+
+    <!-- ========================================================= -->
+    <!-- Ambulance                                                  -->
+    <!-- ========================================================= -->
+
+    <vehicle
+        id="ambulance0"
+        type="ambulance"
+        route="ambulanceInitialRoute"
+        depart="300"
+        departSpeed="max"
+    />
+
+
+    <!-- ========================================================= -->
+    <!-- Accident Vehicle                                           -->
+    <!-- ========================================================= -->
+
+    <!--
+        Physical accident blockage on E3.
+        The vehicle remains stopped on E3.
+    -->
+
+    <vehicle
+        id="accident_blocker"
+        type="accidentVehicle"
+        route="accidentRoute"
+        depart="300"
+        departPos="40"
+        departSpeed="0"
+    >
+        <stop
+            lane="E3_0"
+            endPos="50"
+            duration="600"
+        />
+    </vehicle>
+
+
+    <!-- ========================================================= -->
+    <!-- Dynamic Blockage Vehicle                                   -->
+    <!-- ========================================================= -->
+
+    <!--
+        E7 becomes blocked at 307 seconds.
+
+        Initial plan:
+        E13 -> E5 -> E7 -> E23
+
+        After blockage:
+        E13 -> E5 -> E19 -> E11
+    -->
+
+    <vehicle
+        id="dynamic_blocker"
+        type="accidentVehicle"
+        route="dynamicBlockageRoute"
+        depart="307"
+        departPos="20"
+        departSpeed="0"
+    >
+        <stop
+            lane="E7_0"
+            endPos="30"
+            duration="600"
+        />
+    </vehicle>
+
+</routes>

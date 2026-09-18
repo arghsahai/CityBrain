@@ -17,3 +17,6 @@ data/output/
 
 *.tmp
 *.bak
+.DS_Store
+!simulation/network/regression/city.net.xml
+experiments/results/*/
