@@ -33,12 +33,12 @@ class ExperimentTests(unittest.TestCase):
         from experiments.analysis.summarize import summarize
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)/'results.csv'
-            fields = ['scenario','profile','strategy','completion_status','completed','teleported','actual_travel_time','eta_error']
+            fields = ['scenario','profile','strategy','completion_status','completed','teleported','actual_travel_time','eta_error','seed']
             with path.open('w', newline='') as stream:
                 writer = csv.DictWriter(stream, fieldnames=fields)
                 writer.writeheader()
-                for status, completed, teleported, travel in [('SUCCESS','True','False',20), ('TELEPORTED','False','True',600), ('TIMEOUT','False','False',900)]:
-                    writer.writerow(dict(zip(fields,['S05','normal','static',status,completed,teleported,travel,2])))
+                for seed, (status, completed, teleported, travel) in enumerate([('SUCCESS','True','False',20), ('TELEPORTED','False','True',600), ('TIMEOUT','False','False',900)], 1):
+                    writer.writerow(dict(zip(fields,['S05','normal','static',status,completed,teleported,travel,2,seed])))
             text = summarize(path).read_text()
             self.assertIn('| 3 | 1 | 1 | 20.00 |', text)
 
