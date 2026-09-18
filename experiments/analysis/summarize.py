@@ -4,6 +4,7 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 import statistics
+import math
 
 
 def summarize(path):
@@ -29,6 +30,23 @@ def summarize(path):
         if all(metric in rows[0] for metric in metrics):
             values = [f'{statistics.mean(float(row[metric]) for row in rows):.3f}' for metric in metrics]
             lines.append('| '+' | '.join([*key,*values])+' |')
+    lines += ['', '95% Wilson intervals describe binomial success uncertainty; they are not superiority tests.', '',
+              '| Scenario | Profile | Strategy | Success rate | 95% Wilson interval |',
+              '|---|---|---|---:|---|']
+    for key, rows in sorted(groups.items()):
+        if key[0] == 'S01':
+            continue
+        n = len(rows)
+        proportion = sum(row['completion_status']=='SUCCESS' for row in rows)/n
+        z = 1.959963984540054
+        denominator = 1 + z*z/n
+        center = (proportion + z*z/(2*n))/denominator
+        margin = z*math.sqrt(proportion*(1-proportion)/n + z*z/(4*n*n))/denominator
+        lines.append('| '+' | '.join([*key,f'{100*proportion:.1f}%',f'{100*(center-margin):.1f}%–{100*(center+margin):.1f}%'])+' |')
+    lines += ['', 'All completion outcomes:', '']
+    for key, rows in sorted(groups.items()):
+        counts = {status: sum(row['completion_status']==status for row in rows) for status in sorted({row['completion_status'] for row in rows})}
+        lines.append(f'- {" / ".join(key)}: {counts}')
     output = Path(path).with_suffix('.md')
     output.write_text('\n'.join(lines)+'\n')
     return output
