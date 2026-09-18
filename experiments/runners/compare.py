@@ -1,0 +1,254 @@
+"""Paired, headless SUMO trials using the existing CityBrain planner interfaces."""
+import argparse
+import contextlib
+import copy
+import csv
+import hashlib
+import subprocess
+import io
+import json
+from pathlib import Path
+import time
+import xml.etree.ElementTree as ET
+
+import sumolib
+import traci
+
+from citybrain.core.city_state import CityState
+from citybrain.integration.state_adapter import build_state
+from citybrain.integration.simulation_controller import update_city_state
+from citybrain.models.emergency import Emergency
+from citybrain.planner.emergency_planner import EmergencyPlanner
+from citybrain.planner.replanner import Replanner
+from experiments.outcomes import classify_step
+
+ROOT = Path(__file__).resolve().parents[2]
+PROFILES = {"normal": 1, "heavy": 1.5, "peak": 2, "congested": 3}
+
+
+def prepare_config(directory, scenario, profile):
+    directory.mkdir(parents=True, exist_ok=True)
+    tree = ET.parse(ROOT / 'simulation/scenarios/S05_dynamic_blockage/dynamic_blockage.rou.xml')
+    routes = tree.getroot()
+    for flow in routes.findall('flow'):
+        multiplier = max(PROFILES[profile], 1.5) if scenario == "S03" else PROFILES[profile]
+        flow.set('vehsPerHour', str(float(flow.get('vehsPerHour')) * multiplier))
+    # Keep stochastic car-following and ordinary intersection rules; no blue-light bypass.
+    routes.find("vType[@id='ambulance']").set('vClass', 'emergency')
+    if scenario == 'S01':
+        for vehicle in list(routes.findall('vehicle')):
+            routes.remove(vehicle)
+    elif scenario in ('S02', 'S03', 'S07'):
+        routes.remove(routes.find("vehicle[@id='dynamic_blocker']"))
+    elif scenario == 'S04':
+        routes.find("vehicle[@id='dynamic_blocker']").set('depart', '295')
+    elif scenario == 'S06':
+        ET.SubElement(routes, 'route', id='secondBlockageRoute', edges='E11')
+        vehicle = ET.SubElement(routes, 'vehicle', id='second_blocker', type='accidentVehicle',
+                                route='secondBlockageRoute', depart='310', departPos='20', departSpeed='0')
+        ET.SubElement(vehicle, 'stop', lane='E11_0', endPos='30', duration='600')
+    if scenario == 'S07':
+        ET.SubElement(routes, 'vType', id='slowCar', vClass='passenger', maxSpeed='3', accel='2.6', decel='4.5', sigma='0.5')
+        ET.SubElement(routes, 'route', id='queueRoute', edges='E7 E23')
+        ET.SubElement(routes, 'flow', id='queue', type='slowCar', route='queueRoute', begin='305', end='450', vehsPerHour='1800')
+    # SUMO requires demand records in chronological order.
+    demand = list(routes.findall('flow')) + list(routes.findall('vehicle'))
+    for element in demand:
+        routes.remove(element)
+    for element in sorted(demand, key=lambda item: float(item.get('begin', item.get('depart', '0')))):
+        routes.append(element)
+    tree.write(directory / 'routes.rou.xml', encoding='utf-8', xml_declaration=True)
+    config = ET.Element('configuration')
+    inputs = ET.SubElement(config, 'input')
+    ET.SubElement(inputs, 'net-file', value=str(ROOT / 'simulation/network/city.net.xml'))
+    ET.SubElement(inputs, 'route-files', value='routes.rou.xml')
+    ET.ElementTree(config).write(directory / 'run.sumocfg')
+    return directory / 'run.sumocfg'
+
+
+def remaining_routes(state, ambulance):
+    """Limit candidates to reachable suffixes, without changing teammate routing code."""
+    edge = traci.vehicle.getRoadID(ambulance)
+    if edge.startswith(':'):
+        return False
+    state['routes'] = {key: route[route.index(edge):] for key, route in state['routes'].items() if edge in route}
+    return bool(state['routes'])
+
+
+def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
+    config = prepare_config(directory, scenario, profile)
+    result = dict(scenario=scenario, strategy=strategy, seed=seed, profile=profile,
+                  accident_time=300, blockage_time=307 if scenario in ('S05', 'S06') else '',
+                  initial_route='', final_route='', initial_eta='', replanned_eta='',
+                  blockage_detection_time='', replanning_trigger_time='', replanning_completion_time='',
+                  ambulance_dispatch_time='', ambulance_arrival_time='', actual_travel_time='',
+                  response_time='', eta_error='', number_of_replans=0, successful_route_changes=0,
+                  route_changed=False, replanning_latency='', planner_computation_ms=0,
+                  completion_status='TIMEOUT', teleported=False, completed=False)
+    planner, replanner, city = EmergencyPlanner(), Replanner(), CityState()
+    emergency = Emergency('EM001', 'J3', 'HIGH', 'ROAD_ACCIDENT')
+    plan = None
+    blocked = set()
+    first_blockage_detection = None
+    last_evaluation = -10
+    last_change = -10
+    events = []
+    traffic_samples = []
+    edge_samples = []
+    traci.start([sumolib.checkBinary('sumo-gui' if gui else 'sumo'), '-c', str(config),
+                 '--seed', str(seed), '--step-length', '1', '--end', str(horizon),
+                 '--tripinfo-output', str(directory / 'tripinfo.xml'),
+                 '--tripinfo-output.write-unfinished', 'true', '--no-step-log', 'true',
+                 '--duration-log.disable', 'true'])
+    try:
+        while traci.simulation.getTime() < horizon and traci.simulation.getMinExpectedNumber() > 0:
+            traci.simulationStep()
+            now = traci.simulation.getTime()
+            ids = traci.vehicle.getIDList()
+            update_city_state(city)
+            new_blocked = set()
+            for blocker in ('accident_blocker', 'dynamic_blocker', 'second_blocker'):
+                if blocker in ids and traci.vehicle.isStopped(blocker):
+                    new_blocked.add(traci.vehicle.getRoadID(blocker))
+            changed = new_blocked != blocked
+            blocked = new_blocked
+            if 'E7' in blocked and first_blockage_detection is None:
+                first_blockage_detection = now
+                result['blockage_detection_time'] = now
+            if now % 10 == 0:
+                for edge in ('E3','E5','E7','E19','E11'):
+                    edge_samples.append(dict(time=now, edge=edge, vehicle_count=traci.edge.getLastStepVehicleNumber(edge),
+                                             mean_speed=traci.edge.getLastStepMeanSpeed(edge),
+                                             occupancy_percent=traci.edge.getLastStepOccupancy(edge),
+                                             queue_length_vehicles=traci.edge.getLastStepHaltingNumber(edge),
+                                             travel_time=traci.edge.getTraveltime(edge)))
+            cars = [v for v in ids if traci.vehicle.getTypeID(v) in ('car', 'slowCar')]
+            if cars:
+                traffic_samples.append(sum(traci.vehicle.getSpeed(v) for v in cars) / len(cars))
+            if plan is not None and not result['completed'] and result['completion_status'] == 'TIMEOUT':
+                outcome = classify_step(plan.ambulance_id, ids, traci.simulation.getArrivedIDList(),
+                                        traci.simulation.getStartingTeleportIDList())
+                if outcome:
+                    result['completion_status'] = outcome
+                    result['teleported'] = outcome == 'TELEPORTED'
+                    result['completed'] = outcome == 'SUCCESS'
+                    if result['completed']:
+                        result['ambulance_arrival_time'] = now
+                        result['actual_travel_time'] = now - result['ambulance_dispatch_time']
+                        result['response_time'] = now - 300
+                        result['eta_error'] = abs(result['actual_travel_time'] - result['initial_eta'])
+            if scenario == 'S01' or now < 300 or (plan is not None and result['completion_status'] != 'TIMEOUT'):
+                continue
+            state = build_state(city, blocked_edges=blocked)
+            if plan is None:
+                if not state['ambulances']:
+                    continue
+                if not remaining_routes(state, state['ambulances'][0]['id']):
+                    continue
+                start = time.perf_counter()
+                with contextlib.redirect_stdout(io.StringIO()):
+                    candidate = planner.create_plan(emergency, state)
+                result['planner_computation_ms'] += (time.perf_counter() - start) * 1000
+                if candidate is None:
+                    result['completion_status'] = 'NO_ROUTE'
+                    continue
+                traci.vehicle.setRoute(candidate.ambulance_id, candidate.route)
+                plan = candidate
+                result.update(initial_route=' -> '.join(plan.route), final_route=' -> '.join(plan.route),
+                              initial_eta=plan.eta, ambulance_dispatch_time=now, completion_status='TIMEOUT')
+                last_change = now
+            elif strategy == 'dynamic' and (changed or now - last_evaluation >= 1):
+                last_evaluation = now
+                if not remaining_routes(state, plan.ambulance_id):
+                    continue
+                current = list(traci.vehicle.getRoute(plan.ambulance_id))[traci.vehicle.getRouteIndex(plan.ambulance_id):]
+                invalid = any(edge in blocked for edge in current)
+                start = time.perf_counter()
+                with contextlib.redirect_stdout(io.StringIO()):
+                    candidate = replanner.replan(copy.deepcopy(plan), state)
+                elapsed = (time.perf_counter() - start) * 1000
+                result['planner_computation_ms'] += elapsed
+                old_eta = sum(state['roads'][e]['travel_time'] for e in current)
+                benefit = old_eta - candidate.eta if candidate else None
+                apply = bool(candidate and candidate.route != current and
+                             (invalid or (now-last_change >= 10 and benefit >= max(5, old_eta * .15))))
+                event = dict(time=now, trigger='blocked_remaining_route' if invalid else 'periodic_traffic_evaluation',
+                             blocked_edges=sorted(blocked), old_route=current,
+                             candidate_route=candidate.route if candidate else [], old_eta=old_eta,
+                             candidate_eta=candidate.eta if candidate else None, predicted_benefit=benefit,
+                             planner_computation_ms=elapsed, decision='APPLY' if apply else 'KEEP')
+                if apply:
+                    try:
+                        traci.vehicle.setRoute(candidate.ambulance_id, candidate.route)
+                    except traci.TraCIException as error:
+                        event.update(decision='APPLY_FAILED', error=str(error))
+                    else:
+                        plan = candidate
+                        last_change = now
+                        result['number_of_replans'] += 1
+                        result['successful_route_changes'] += 1
+                        result.update(final_route=' -> '.join(plan.route), replanned_eta=plan.eta, route_changed=True)
+                        if result['replanning_latency'] == '' and first_blockage_detection is not None:
+                            result['replanning_latency'] = now - first_blockage_detection
+                            result['replanning_trigger_time'] = first_blockage_detection
+                            result['replanning_completion_time'] = now
+                events.append(event)
+    finally:
+        traci.close()
+    trips = ET.parse(directory / 'tripinfo.xml').getroot().findall('tripinfo')
+    cars = [t for t in trips if t.get('vType') in ('car', 'slowCar')]
+    arrived = [t for t in cars if float(t.get('arrival')) >= 0]
+    result.update(normal_traffic_waiting_time=sum(float(t.get('waitingTime')) for t in cars)/max(1,len(cars)),
+                  normal_traffic_time_loss=sum(float(t.get('timeLoss')) for t in cars)/max(1,len(cars)),
+                  normal_traffic_arrivals=len(arrived), network_throughput_vehicles_per_hour=len(arrived)*3600/horizon,
+                  average_vehicle_speed=sum(traffic_samples)/max(1,len(traffic_samples)))
+    if scenario == 'S01':
+        result['completion_status'] = 'NOT_APPLICABLE'
+    elif plan is None:
+        result['completion_status'] = 'NO_ROUTE'
+    with (directory/'edges.csv').open('w', newline='') as file:
+        if edge_samples:
+            writer = csv.DictWriter(file, fieldnames=list(edge_samples[0]))
+            writer.writeheader()
+            writer.writerows(edge_samples)
+    (directory / 'events.json').write_text(json.dumps(events, indent=2))
+    (directory / 'result.json').write_text(json.dumps(result, indent=2))
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--scenarios', nargs='+', choices=['S01','S02','S03','S04','S05','S06','S07'], default=['S05'])
+    parser.add_argument('--seeds', nargs='+', type=int, default=list(range(1,11)))
+    parser.add_argument('--profiles', nargs='+', choices=list(PROFILES), default=['normal'])
+    parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/paired')
+    parser.add_argument('--gui', action='store_true')
+    args = parser.parse_args()
+    if args.output.exists():
+        parser.error('Output directory already exists; choose a fresh --output to preserve trials')
+    args.output.mkdir(parents=True)
+    manifest = dict(scenarios=args.scenarios, profiles=args.profiles, seeds=args.seeds,
+                    git_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=ROOT, text=True).strip(),
+                    sumo_version=subprocess.check_output([sumolib.checkBinary('sumo'),'--version'], text=True).splitlines()[0],
+                    network_sha256=hashlib.sha256((ROOT/'simulation/network/city.net.xml').read_bytes()).hexdigest(),
+                    evaluation_interval_seconds=1, commitment_seconds=10, benefit_seconds=5, benefit_fraction=.15)
+    (args.output/'manifest.json').write_text(json.dumps(manifest, indent=2))
+    with (args.output/'results.csv').open('w', newline='') as stream:
+        writer = None
+        for scenario in args.scenarios:
+            for profile in args.profiles:
+                for seed in args.seeds:
+                    for strategy in ('static','dynamic'):
+                        directory = args.output/f'{scenario}_{profile}_{seed}_{strategy}'
+                        row = trial(scenario, strategy, seed, profile, directory, gui=args.gui)
+                        if writer is None:
+                            writer = csv.DictWriter(stream, fieldnames=list(row))
+                            writer.writeheader()
+                        writer.writerow(row)
+                        stream.flush()
+                        print(scenario, profile, seed, strategy, row['completion_status'], row['actual_travel_time'], flush=True)
+    from experiments.analysis.summarize import summarize
+    summarize(args.output/'results.csv')
+
+if __name__ == '__main__':
+    main()
