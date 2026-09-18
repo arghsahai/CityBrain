@@ -3,6 +3,8 @@ import os
 
 import traci
 
+from experiments.outcomes import classify_step
+
 from citybrain.core.city_state import CityState
 from citybrain.core.vehicle_state import VehicleState
 from citybrain.integration.state_adapter import build_state
@@ -42,6 +44,8 @@ EXPERIMENT_FIELDS = [
     "number_of_replans",
     "route_changed",
     "completed",
+    "completion_status",
+    "teleported",
 ]
 
 
@@ -426,6 +430,7 @@ def create_experiment_result(
     initial_eta,
     ambulance_completion_time,
     completed,
+    completion_status=None,
 ):
 
     actual_response_time = None
@@ -484,6 +489,8 @@ def create_experiment_result(
 
         "completed":
             completed,
+        "completion_status": completion_status or ("SUCCESS" if completed else "TIMEOUT"),
+        "teleported": completion_status == "TELEPORTED",
     }
 
 
@@ -789,18 +796,24 @@ def run_simulation():
                     in traci.vehicle.getIDList()
                 )
 
-                if not ambulance_present:
+                outcome = classify_step(
+                    ambulance_id, traci.vehicle.getIDList(),
+                    traci.simulation.getArrivedIDList(),
+                    traci.simulation.getStartingTeleportIDList(),
+                )
+
+                if outcome is not None:
 
                     if not emergency_finished:
 
                         ambulance_completion_time = (
-                            current_time
+                            current_time if outcome == "SUCCESS" else None
                         )
 
                         print()
                         print(
                             "[Static Baseline] Ambulance "
-                            f"{ambulance_id} has completed "
+                            f"{ambulance_id} outcome: {outcome}; "
                             "or left the SUMO simulation."
                         )
 
@@ -817,7 +830,8 @@ def run_simulation():
                                 initial_route,
                                 initial_eta,
                                 ambulance_completion_time,
-                                True,
+                                outcome == "SUCCESS",
+                                outcome,
                             )
                         )
 

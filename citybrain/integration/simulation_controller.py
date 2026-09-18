@@ -4,6 +4,8 @@ import os
 
 import traci
 
+from experiments.outcomes import classify_step
+
 from citybrain.core.city_state import CityState
 from citybrain.core.vehicle_state import VehicleState
 from citybrain.integration.state_adapter import build_state
@@ -73,6 +75,8 @@ EXPERIMENT_FIELDS = [
     "number_of_replans",
     "route_changed",
     "completed",
+    "completion_status",
+    "teleported",
 ]
 
 
@@ -547,6 +551,7 @@ def create_experiment_result(
     number_of_replans,
     route_was_changed,
     completed,
+    completion_status=None,
 ):
 
     return {
@@ -614,6 +619,8 @@ def create_experiment_result(
 
         "completed":
             completed,
+        "completion_status": completion_status or ("SUCCESS" if completed else "TIMEOUT"),
+        "teleported": completion_status == "TELEPORTED",
     }
 
 
@@ -995,19 +1002,25 @@ def run_simulation():
                     in traci.vehicle.getIDList()
                 )
 
-                if not ambulance_present:
+                outcome = classify_step(
+                    current_plan.ambulance_id, traci.vehicle.getIDList(),
+                    traci.simulation.getArrivedIDList(),
+                    traci.simulation.getStartingTeleportIDList(),
+                )
+
+                if outcome is not None:
 
                     if not emergency_finished:
 
                         ambulance_completion_time = (
-                            current_time
+                            current_time if outcome == "SUCCESS" else None
                         )
 
                         print()
                         print(
                             "[CityBrain] Ambulance "
                             f"{current_plan.ambulance_id} "
-                            "has completed or left "
+                            f"outcome: {outcome}; "
                             "the SUMO simulation."
                         )
 
@@ -1037,7 +1050,8 @@ def run_simulation():
                                 ambulance_completion_time,
                                 number_of_replans,
                                 route_was_changed,
-                                True,
+                                outcome == "SUCCESS",
+                                outcome,
                             )
                         )
 
