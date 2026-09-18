@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 .vscode/
 *.log
+# Raw experiment artifacts are reproducible and may be large.
+experiments/results/*/
