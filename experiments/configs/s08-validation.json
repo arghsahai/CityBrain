@@ -1,0 +1,45 @@
+{
+  "version": "s08-v2",
+  "scenario": "S08",
+  "profiles": [
+    "normal",
+    "heavy",
+    "peak"
+  ],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "strategies": [
+    "static",
+    "dynamic"
+  ],
+  "expected_trials": 60,
+  "horizon_seconds": 900,
+  "step_seconds": 1,
+  "incident_departures_seconds": {
+    "accident_blocker": 300,
+    "dynamic_blocker": 307,
+    "second_blocker": 315
+  },
+  "hospital": {
+    "id": "H1",
+    "junction": "J9"
+  },
+  "policy": {
+    "evaluation_interval_seconds": 1,
+    "commitment_seconds": 10,
+    "benefit_seconds": 5,
+    "benefit_fraction": 0.15
+  },
+  "observed_change_definition": "First E7/E11 edge deterioration versus dispatch snapshot: newly blocked, newly non-finite, or travel-time increase at least max(5 s, 15%). This labels observations and does not change the existing decision policy.",
+  "interpretation_rule": "Repeated multi-replan evidence requires auditable two-or-more applied replans in at least two seeds and at least two demand profiles. Otherwise implementation demonstration only. This fixed synthetic scenario alone is not classified as strong evidence; timing/topology sensitivity remains untested."
+}
