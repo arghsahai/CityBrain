@@ -30,9 +30,9 @@ python -m simulation.tools.check_signals
 python -m simulation.tools.build_network --output /tmp/citybrain-rebuilt.net.xml
 ```
 
-Each comparison executes static then dynamic trials with identical SUMO inputs and seed. The static strategy applies one initial plan; dynamic evaluation runs every simulated second, skipping internal intersection edges until a route can be safely applied. Output directories must be fresh, preventing accidental overwrites. Errors stop the suite and preserve completed rows. The full suite is 560 simulations; smoke-check a small subset first. `experiments/configs/suite.json` records the reference suite and policy parameters; the commands above are the execution interface.
+Each comparison executes static then dynamic trials with identical SUMO inputs and seed. The static strategy applies one initial plan; dynamic evaluation runs every simulated second, skipping internal intersection edges until a route can be safely applied. Use a fresh output directory for a new experiment. `--resume` accepts an existing directory only when execution code, SUMO inputs, version, seeds and scenario/profile lists match its manifest. Completed trial checkpoints, including ERROR outcomes, are retained; incomplete trials restart. CSV snapshots and JSON checkpoints are written atomically. Infrastructure errors are recorded as ERROR and the suite continues; interruption remains interruptible. The full suite is 560 simulations; smoke-check a small subset first. `experiments/configs/suite.json` records the reference suite and policy parameters; the commands above are the execution interface.
 
-Every trial saves generated route/config files, `result.json`, explainable `events.json`, edge measurements every 10 seconds in `edges.csv`, and SUMO `tripinfo.xml`. The suite saves a CSV, Markdown summary and input manifest with SUMO version, Git commit, network hash and policy values. Generate charts separately. Large raw artifacts should remain local; retain compact research CSVs and summaries in Git.
+Every trial saves generated route/config files, `result.json`, explainable `events.json`, edge measurements every 10 seconds in `edges.csv`, and SUMO `tripinfo.xml`. The suite saves a CSV, Markdown summary, statistics CSV and input manifest with SUMO version, Git commit, execution/input hash and policy values. The hash captures uncommitted execution code too; analysis and documentation are excluded. Generate charts separately. Large raw artifacts should remain local; retain compact research CSVs and summaries in Git.
 
 ## Network and signals
 
@@ -79,11 +79,11 @@ Blocked remaining routes bypass the commitment timer. Congestion changes require
 
 ## Metric definitions and schema
 
-`SUCCESS` requires SUMO's arrived event. `TELEPORTED` takes precedence over arrival and is terminal even if SUMO later reinserts the vehicle. Unexplained disappearance is `FAILED_BLOCKED`; no initial plan is `NO_ROUTE`; remaining unresolved trips at 900 s are `TIMEOUT`. Do not infer success from disappearance.
+`SUCCESS` requires SUMO's arrived event. `TELEPORTED` takes precedence over arrival and is terminal even if SUMO later reinserts the vehicle. Unexplained disappearance is `FAILED_BLOCKED` (the name does not prove blockage causality); infrastructure failures are `ERROR` with blank traffic/travel metrics; no initial plan is `NO_ROUTE`; remaining unresolved trips at 900 s are `TIMEOUT`. Do not infer success from disappearance.
 
 Travel time is arrival minus dispatch. Response time is arrival minus the nominal 300 s accident event. ETA error is absolute error against the initial dispatch ETA; failed/teleported trials have blank arrival/travel/response/ETA-error fields. Dispatch can occur after nominal departure due to insertion delay. Initial ETA reflects the existing adapter's edge-speed estimate and excludes explicit intersection-delay prediction.
 
-Replanning latency is simulated seconds from physical E7 blockage detection to the first successful updated route application. It is distinct from `planner_computation_ms`, measured with `time.perf_counter()` and summed across initial planning and re-evaluations; individual call times are logged in events. Congestion decisions and multi-change events remain available in events rather than being forced into a single E7 latency metric.
+Replanning latency is simulated seconds from the first observed meaningful candidate change to its successful application, including any commitment wait. Each applied event records its own trigger/completion/latency; the CSV records the first applied replan. Physical E7 stop detection is a separate timestamp and may occur after congestion has already triggered a reroute. It is distinct from `planner_computation_ms`, measured with `time.perf_counter()` and summed across initial planning and re-evaluations; individual call times are logged in events. Congestion and multi-change events retain their individual timings; a later E11-driven change is never attributed to an earlier E7 blockage.
 
 `number_of_replans` and `successful_route_changes` count successful route applications, not evaluations or route-prefix shortening. Edge logs include speed (m/s), travel time (s), occupancy (%), vehicles and queue length (halted vehicles). Background waiting/time loss are means over completed and unfinished car trips in a common 900-second window. Throughput is background arrivals × 3600/900. Average speed is the average of per-step fleet means; it is not distance divided by total trip time.
 
@@ -92,3 +92,41 @@ Legacy controllers and historical CSVs remain on the preserved reference branch.
 ## Research limits
 
 Report all seeds and failures. Summaries include success count, teleport count, mean/median/spread of successful travel times and normal-traffic effects. Successful-trip averages alone cannot establish improvement when failure rates differ. Some seeds initially choose a route avoiding E7, so static success is expected and retained. The small synthetic network and four existing candidate routes limit generalization. S06 can exhaust reachable candidates and fail; this is evidence of an integration limit, not a reason to replace teammate routing. No hardware, perception accuracy, real-city validity or joint route-and-signal optimization is claimed.
+
+## Multi-change research scenario S08
+
+S06 blocks E3, E7 and E11: these form the complete eastbound cut into the hospital column. A connectivity test confirms that the 3×3 graph cannot reach J9 after that cut. S06 remains unchanged as a failure regression.
+
+S08 uses a separate 3×4 network in `simulation/network/research/`. J10/J11/J12 add a northern row; bidirectional links E25–E34 provide another crossing. The existing candidate-route interface receives one additional route, E13→E5→E19→E27→E33→E30, ending at the same hospital J9. Subhashini's planner is unchanged. The second blocker on E11 departs at 315 s. Signal geometry changes on the extended network, so S08 travel times must not be compared to S05 as if network were controlled.
+
+```sh
+python -m simulation.tools.research_network
+python -m experiments.runners.compare --scenarios S08 --seeds 1 --output experiments/results/s08-new
+```
+
+Seed-1 validation produced P1 at 311 s, P2 at 321 s and arrival at 425 s (124 s after dispatch), with two successful physical route changes. Both triggers preceded the respective vehicles fully stopping: traffic deterioration caused early evaluation. This is a controlled multi-change demonstration, not a population-level claim.
+
+## Validation, resume and demo
+
+The controlled matrix is S05 and S07 × normal/heavy/peak × seeds 1–10 × static/dynamic = 120 trials. Profiles may run in separate OS processes; each process owns an independent SUMO instance. CPU timing is measured under the recorded machine load and is not a hardware-independent benchmark.
+
+```sh
+python -m experiments.runners.compare --scenarios S05 S07 --profiles normal --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/matrix-normal
+# Repeat with heavy and peak and distinct output directories.
+python -m experiments.runners.compare --scenarios S05 S07 --profiles normal --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/matrix-normal --resume
+python -m experiments.runners.demo
+python -m experiments.runners.demo --gui
+python -m experiments.runners.demo --scenario S08
+```
+
+The demo defaults to dynamic S05 seed 1, uses the same experiment loop, prints dispatch/hospital/route changes/outcome, and writes metrics and event logs. GUI mode starts SUMO automatically with a 100 ms step delay and closes at the 900 s horizon. macOS may require XQuartz startup; it can take longer on its first launch.
+
+The adapter now includes road endpoints so the existing SignalAgent can return relevant junctions. Its current output is a list, without a priority execution/restoration contract. No independent signal-priority policy is added. Nine regression traffic lights are verified through reversible TraCI phase changes; the research network adds three signalized nodes.
+
+Statistics include n, successes/failures/teleports and rates, successful travel mean/median/SD/min/max, ETA error, normal-traffic metrics, Wilson success intervals and matched-seed travel differences where both strategies succeeded. Charts include per-scenario six-panel comparisons and a demand chart. No significance claim is generated. Replan checks count actual Replanner calls; applied route changes are counted separately.
+
+## Latest checkpoint
+
+The controlled 120-run validation is complete; see [research notes](experiments/results/RESEARCH_NOTES.md), [measured summary](experiments/results/validation_matrix.md) and [statistics CSV](experiments/results/validation_matrix_statistics.csv). Both headless and actual sumo-gui demos completed. Twelve assertion-based tests and all ten unchanged teammate scripts pass. The optional 560-run suite remains unexecuted.
+
+The initial integration was merged through PR #2 by the repository workflow. Follow-up validation work is on `feature/experiment-validation`; this task did not modify or merge `main`.
