@@ -74,6 +74,8 @@ def build_state(city_state=None, blocked_edges=None):
         travel_time = _calculate_travel_time(edge_id)
 
         roads[edge_id] = {
+            "from": traci.edge.getFromJunction(edge_id),
+            "to": traci.edge.getToJunction(edge_id),
             "travel_time": travel_time,
             "congestion": _congestion_level(
                 mean_speed,

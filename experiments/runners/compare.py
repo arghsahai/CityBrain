@@ -19,9 +19,14 @@ from citybrain.models.emergency import Emergency
 from citybrain.planner.emergency_planner import EmergencyPlanner
 from citybrain.planner.replanner import Replanner
 from experiments.outcomes import classify_step
+from experiments.runners.storage import fingerprint, write_json, write_csv, validate_row, validate_pairs
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = {"normal": 1, "heavy": 1.5, "peak": 2, "congested": 3}
+
+
+def network_path(scenario):
+    return ROOT / ('simulation/network/research/city.net.xml' if scenario == 'S08' else 'simulation/network/regression/city.net.xml')
 
 
 def prepare_config(directory, scenario, profile):
@@ -40,10 +45,10 @@ def prepare_config(directory, scenario, profile):
         routes.remove(routes.find("vehicle[@id='dynamic_blocker']"))
     elif scenario == 'S04':
         routes.find("vehicle[@id='dynamic_blocker']").set('depart', '295')
-    elif scenario == 'S06':
+    elif scenario in ('S06', 'S08'):
         ET.SubElement(routes, 'route', id='secondBlockageRoute', edges='E11')
         vehicle = ET.SubElement(routes, 'vehicle', id='second_blocker', type='accidentVehicle',
-                                route='secondBlockageRoute', depart='310', departPos='20', departSpeed='0')
+                                route='secondBlockageRoute', depart='315' if scenario == 'S08' else '310', departPos='20', departSpeed='0')
         ET.SubElement(vehicle, 'stop', lane='E11_0', endPos='30', duration='600')
     if scenario == 'S07':
         ET.SubElement(routes, 'vType', id='slowCar', vClass='passenger', maxSpeed='3', accel='2.6', decel='4.5', sigma='0.5')
@@ -58,7 +63,7 @@ def prepare_config(directory, scenario, profile):
     tree.write(directory / 'routes.rou.xml', encoding='utf-8', xml_declaration=True)
     config = ET.Element('configuration')
     inputs = ET.SubElement(config, 'input')
-    ET.SubElement(inputs, 'net-file', value=str(ROOT / 'simulation/network/regression/city.net.xml'))
+    ET.SubElement(inputs, 'net-file', value=str(network_path(scenario)))
     ET.SubElement(inputs, 'route-files', value='routes.rou.xml')
     ET.ElementTree(config).write(directory / 'run.sumocfg')
     return directory / 'run.sumocfg'
@@ -73,16 +78,23 @@ def remaining_routes(state, ambulance):
     return bool(state['routes'])
 
 
-def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
-    config = prepare_config(directory, scenario, profile)
-    result = dict(scenario=scenario, strategy=strategy, seed=seed, profile=profile,
-                  accident_time=300, blockage_time=307 if scenario in ('S05', 'S06') else '',
+def initial_result(scenario, strategy, seed, profile):
+    return dict(scenario=scenario, strategy=strategy, seed=seed, profile=profile,
+                  accident_time=300, blockage_time=307 if scenario in ('S05', 'S06', 'S08') else '',
                   initial_route='', final_route='', initial_eta='', replanned_eta='',
                   blockage_detection_time='', replanning_trigger_time='', replanning_completion_time='',
                   ambulance_dispatch_time='', ambulance_arrival_time='', actual_travel_time='',
                   response_time='', eta_error='', number_of_replans=0, successful_route_changes=0,
                   route_changed=False, replanning_latency='', planner_computation_ms=0,
-                  completion_status='TIMEOUT', teleported=False, completed=False)
+                  replan_checks=0, runtime_seconds=0, error='', completion_status='TIMEOUT', teleported=False, completed=False,
+                  normal_traffic_waiting_time=0, normal_traffic_time_loss=0, normal_traffic_arrivals=0,
+                  network_throughput_vehicles_per_hour=0, average_vehicle_speed=0)
+
+
+def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False, demo=False):
+    config = prepare_config(directory, scenario, profile)
+    result = initial_result(scenario, strategy, seed, profile)
+    wall_start = time.perf_counter()
     planner, replanner = EmergencyPlanner(), Replanner()
     emergency = Emergency('EM001', 'J3', 'HIGH', 'ROAD_ACCIDENT')
     plan = None
@@ -90,6 +102,8 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
     first_blockage_detection = None
     last_evaluation = -10
     last_change = -10
+    pending_candidate = None
+    pending_since = None
     events = []
     traffic_samples = []
     edge_samples = []
@@ -97,7 +111,7 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                  '--seed', str(seed), '--step-length', '1', '--end', str(horizon),
                  '--tripinfo-output', str(directory / 'tripinfo.xml'),
                  '--tripinfo-output.write-unfinished', 'true', '--no-step-log', 'true',
-                 '--duration-log.disable', 'true'])
+                 '--duration-log.disable', 'true'] + (['--start','--quit-on-end','--delay','100'] if gui else []))
     try:
         while traci.simulation.getTime() < horizon and traci.simulation.getMinExpectedNumber() > 0:
             traci.simulationStep()
@@ -108,6 +122,9 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                 if blocker in ids and traci.vehicle.isStopped(blocker):
                     new_blocked.add(traci.vehicle.getRoadID(blocker))
             changed = new_blocked != blocked
+            if changed:
+                events.append(dict(time=now, kind='STATE_CHANGE', blocked_edges=sorted(new_blocked), previous_blocked_edges=sorted(blocked)))
+                if demo: print(f'[{now:.0f}s] State change: blocked={sorted(new_blocked)}', flush=True)
             blocked = new_blocked
             if 'E7' in blocked and first_blockage_detection is None:
                 first_blockage_detection = now
@@ -126,6 +143,8 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                 outcome = classify_step(plan.ambulance_id, ids, traci.simulation.getArrivedIDList(),
                                         traci.simulation.getStartingTeleportIDList())
                 if outcome:
+                    events.append(dict(time=now, kind='OUTCOME', status=outcome))
+                    if demo: print(f'[{now:.0f}s] Ambulance outcome: {outcome}', flush=True)
                     result['completion_status'] = outcome
                     result['teleported'] = outcome == 'TELEPORTED'
                     result['completed'] = outcome == 'SUCCESS'
@@ -137,6 +156,8 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
             if scenario == 'S01' or now < 300 or (plan is not None and result['completion_status'] != 'TIMEOUT'):
                 continue
             state = build_state(blocked_edges=blocked)
+            if scenario == 'S08':
+                state['routes'] = {**state['routes'], 'R_EM_5': ['E13','E5','E19','E27','E33','E30']}
             if plan is None:
                 if not state['ambulances']:
                     continue
@@ -153,6 +174,8 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                 plan = candidate
                 result.update(initial_route=' -> '.join(plan.route), final_route=' -> '.join(plan.route),
                               initial_eta=plan.eta, ambulance_dispatch_time=now, completion_status='TIMEOUT')
+                events.append(dict(time=now, kind='DISPATCH', ambulance=plan.ambulance_id, hospital=plan.hospital_id, route=list(plan.route), eta=plan.eta, decision='APPLY'))
+                if demo: print(f'[{now:.0f}s] P0 dispatched: {plan.ambulance_id} -> {plan.hospital_id}; route={plan.route}; ETA={plan.eta:.2f}s', flush=True)
                 last_change = now
             elif strategy == 'dynamic' and (changed or now - last_evaluation >= 1):
                 last_evaluation = now
@@ -160,6 +183,7 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                     continue
                 current = list(traci.vehicle.getRoute(plan.ambulance_id))[traci.vehicle.getRouteIndex(plan.ambulance_id):]
                 invalid = any(edge in blocked for edge in current)
+                result['replan_checks'] += 1
                 start = time.perf_counter()
                 with contextlib.redirect_stdout(io.StringIO()):
                     candidate = replanner.replan(copy.deepcopy(plan), state)
@@ -167,9 +191,14 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                 result['planner_computation_ms'] += elapsed
                 old_eta = sum(state['roads'][e]['travel_time'] for e in current)
                 benefit = old_eta - candidate.eta if candidate else None
-                apply = bool(candidate and candidate.route != current and
-                             (invalid or (now-last_change >= 10 and benefit >= max(5, old_eta * .15))))
-                event = dict(time=now, trigger='blocked_remaining_route' if invalid else 'periodic_traffic_evaluation',
+                meaningful = bool(candidate and candidate.route != current and
+                                  (invalid or benefit >= max(5, old_eta * .15)))
+                route_key = tuple(candidate.route) if meaningful else None
+                if route_key != pending_candidate:
+                    pending_candidate = route_key
+                    pending_since = now if meaningful else None
+                apply = meaningful and (invalid or now-last_change >= 10)
+                event = dict(time=now, kind='EVALUATION', minimum_commitment_seconds=10, minimum_benefit_seconds=5, minimum_benefit_fraction=.15, seconds_since_assignment=now-last_change, threshold_seconds=max(5,old_eta*.15), reason=('no_reachable_candidate' if candidate is None else 'blocked_route' if invalid else 'benefit_and_commitment_gate'), trigger='blocked_remaining_route' if invalid else 'periodic_traffic_evaluation',
                              blocked_edges=sorted(blocked), old_route=current,
                              candidate_route=candidate.route if candidate else [], old_eta=old_eta,
                              candidate_eta=candidate.eta if candidate else None, predicted_benefit=benefit,
@@ -181,14 +210,19 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
                         event.update(decision='APPLY_FAILED', error=str(error))
                     else:
                         plan = candidate
+                        if demo: print(f'[{now:.0f}s] P{result["successful_route_changes"]+1} physically applied: {plan.route}; reason={event["reason"]}', flush=True)
                         last_change = now
                         result['number_of_replans'] += 1
                         result['successful_route_changes'] += 1
                         result.update(final_route=' -> '.join(plan.route), replanned_eta=plan.eta, route_changed=True)
-                        if result['replanning_latency'] == '' and first_blockage_detection is not None:
-                            result['replanning_latency'] = now - first_blockage_detection
-                            result['replanning_trigger_time'] = first_blockage_detection
+                        event.update(trigger_time=pending_since, completion_time=now,
+                                     simulation_latency=now-pending_since)
+                        if result['replanning_latency'] == '':
+                            result['replanning_latency'] = now-pending_since
+                            result['replanning_trigger_time'] = pending_since
                             result['replanning_completion_time'] = now
+                        pending_candidate = None
+                        pending_since = None
                 events.append(event)
     finally:
         traci.close()
@@ -205,45 +239,72 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False):
         result['completion_status'] = 'NO_ROUTE'
     with (directory/'edges.csv').open('w', newline='') as file:
         if edge_samples:
-            writer = csv.DictWriter(file, fieldnames=list(edge_samples[0]))
+            writer = csv.DictWriter(file, fieldnames=list(edge_samples[0]), lineterminator='\n')
             writer.writeheader()
             writer.writerows(edge_samples)
-    (directory / 'events.json').write_text(json.dumps(events, indent=2))
-    (directory / 'result.json').write_text(json.dumps(result, indent=2))
+    result['runtime_seconds'] = time.perf_counter() - wall_start
+    validate_row(result)
+    write_json(directory/'events.json', events)
+    write_json(directory/'result.json', result)
     return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--scenarios', nargs='+', choices=['S01','S02','S03','S04','S05','S06','S07'], default=['S05'])
+    parser.add_argument('--scenarios', nargs='+', choices=['S01','S02','S03','S04','S05','S06','S07','S08'], default=['S05'])
     parser.add_argument('--seeds', nargs='+', type=int, default=list(range(1,11)))
     parser.add_argument('--profiles', nargs='+', choices=list(PROFILES), default=['normal'])
     parser.add_argument('--output', type=Path, default=ROOT/'experiments/results/paired')
     parser.add_argument('--gui', action='store_true')
+    parser.add_argument('--resume', action='store_true')
     args = parser.parse_args()
+    if len(set(args.seeds)) != len(args.seeds) or any(seed < 0 for seed in args.seeds):
+        parser.error('Seeds must be unique nonnegative integers')
+    if len(set(args.scenarios)) != len(args.scenarios) or len(set(args.profiles)) != len(args.profiles):
+        parser.error('Scenarios and profiles must be unique')
+    signature = dict(scenarios=args.scenarios, profiles=args.profiles, seeds=args.seeds,
+                     input_sha256=fingerprint(ROOT), horizon_seconds=900,
+                     sumo_version=subprocess.check_output([sumolib.checkBinary('sumo'),'--version'],text=True).splitlines()[0])
+    manifest_path = args.output/'manifest.json'
     if args.output.exists():
-        parser.error('Output directory already exists; choose a fresh --output to preserve trials')
-    args.output.mkdir(parents=True)
-    manifest = dict(scenarios=args.scenarios, profiles=args.profiles, seeds=args.seeds,
-                    git_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=ROOT, text=True).strip(),
-                    sumo_version=subprocess.check_output([sumolib.checkBinary('sumo'),'--version'], text=True).splitlines()[0],
-                    network_sha256=hashlib.sha256((ROOT/'simulation/network/regression/city.net.xml').read_bytes()).hexdigest(),
-                    evaluation_interval_seconds=1, commitment_seconds=10, benefit_seconds=5, benefit_fraction=.15)
-    (args.output/'manifest.json').write_text(json.dumps(manifest, indent=2))
-    with (args.output/'results.csv').open('w', newline='') as stream:
-        writer = None
-        for scenario in args.scenarios:
-            for profile in args.profiles:
-                for seed in args.seeds:
-                    for strategy in ('static','dynamic'):
-                        directory = args.output/f'{scenario}_{profile}_{seed}_{strategy}'
-                        row = trial(scenario, strategy, seed, profile, directory, gui=args.gui)
-                        if writer is None:
-                            writer = csv.DictWriter(stream, fieldnames=list(row))
-                            writer.writeheader()
-                        writer.writerow(row)
-                        stream.flush()
-                        print(scenario, profile, seed, strategy, row['completion_status'], row['actual_travel_time'], flush=True)
+        if not args.resume or not manifest_path.is_file():
+            parser.error('Use a fresh output directory or --resume with an existing matching manifest')
+        if json.loads(manifest_path.read_text())['signature'] != signature:
+            parser.error('Resume inputs/code differ from manifest; use a fresh output directory')
+    else:
+        args.output.mkdir(parents=True)
+        write_json(manifest_path, dict(signature=signature,
+                   git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+                   evaluation_interval_seconds=1, commitment_seconds=10, benefit_seconds=5, benefit_fraction=.15))
+    rows = []
+    for scenario in args.scenarios:
+        for profile in args.profiles:
+            for seed in args.seeds:
+                for strategy in ('static','dynamic'):
+                    directory = args.output/f'{scenario}_{profile}_{seed}_{strategy}'
+                    checkpoint = directory/'result.json'
+                    if args.resume and checkpoint.exists():
+                        row = json.loads(checkpoint.read_text())
+                        validate_row(row)
+                        if (row['scenario'],row['profile'],row['seed'],row['strategy']) != (scenario,profile,seed,strategy):
+                            raise ValueError(f'Checkpoint identity mismatch: {checkpoint}')
+                        print('RESUME', scenario, profile, seed, strategy, flush=True)
+                    else:
+                        try:
+                            row = trial(scenario,strategy,seed,profile,directory,gui=args.gui)
+                        except Exception as error:
+                            # Keep infrastructure failures explicit. KeyboardInterrupt remains interruptible.
+                            row = initial_result(scenario,strategy,seed,profile)
+                            row.update(completion_status='ERROR', error=f'{type(error).__name__}: {error}',
+                                       normal_traffic_waiting_time='', normal_traffic_time_loss='',
+                                       normal_traffic_arrivals='', network_throughput_vehicles_per_hour='',
+                                       average_vehicle_speed='', planner_computation_ms='', runtime_seconds='')
+                            directory.mkdir(parents=True,exist_ok=True)
+                            write_json(checkpoint,row)
+                        print(scenario,profile,seed,strategy,row['completion_status'],row['actual_travel_time'],flush=True)
+                    rows.append(row)
+                    write_csv(args.output/'results.csv',rows)
+    validate_pairs(rows)
     from experiments.analysis.summarize import summarize
     summarize(args.output/'results.csv')
 

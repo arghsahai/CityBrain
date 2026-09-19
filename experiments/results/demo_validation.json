@@ -1,0 +1,268 @@
+{
+  "demo-gui": {
+    "result": {
+      "scenario": "S05",
+      "strategy": "dynamic",
+      "seed": 1,
+      "profile": "normal",
+      "accident_time": 300,
+      "blockage_time": 307,
+      "initial_route": "E13 -> E5 -> E7 -> E23",
+      "final_route": "E5 -> E19 -> E11",
+      "initial_eta": 25.778927696915208,
+      "replanned_eta": 22.13989501815591,
+      "blockage_detection_time": 314.0,
+      "replanning_trigger_time": 310.0,
+      "replanning_completion_time": 311.0,
+      "ambulance_dispatch_time": 301.0,
+      "ambulance_arrival_time": 335.0,
+      "actual_travel_time": 34.0,
+      "response_time": 35.0,
+      "eta_error": 8.221072303084792,
+      "number_of_replans": 1,
+      "successful_route_changes": 1,
+      "route_changed": true,
+      "replanning_latency": 1.0,
+      "planner_computation_ms": 1.3152930005162489,
+      "replan_checks": 28,
+      "runtime_seconds": 110.10516825000013,
+      "error": "",
+      "completion_status": "SUCCESS",
+      "teleported": false,
+      "completed": true,
+      "normal_traffic_waiting_time": 8.014245014245015,
+      "normal_traffic_time_loss": 12.816296296296295,
+      "normal_traffic_arrivals": 336,
+      "network_throughput_vehicles_per_hour": 1344.0,
+      "average_vehicle_speed": 7.367897949280637
+    },
+    "events": [
+      {
+        "time": 301.0,
+        "kind": "DISPATCH",
+        "ambulance": "ambulance0",
+        "hospital": "H1",
+        "route": [
+          "E13",
+          "E5",
+          "E7",
+          "E23"
+        ],
+        "eta": 25.778927696915208,
+        "decision": "APPLY"
+      },
+      {
+        "time": 309.0,
+        "kind": "STATE_CHANGE",
+        "blocked_edges": [
+          "E3"
+        ],
+        "previous_blocked_edges": []
+      },
+      {
+        "time": 311.0,
+        "kind": "EVALUATION",
+        "minimum_commitment_seconds": 10,
+        "minimum_benefit_seconds": 5,
+        "minimum_benefit_fraction": 0.15,
+        "seconds_since_assignment": 10.0,
+        "threshold_seconds": 6.715558836938739,
+        "reason": "benefit_and_commitment_gate",
+        "trigger": "periodic_traffic_evaluation",
+        "blocked_edges": [
+          "E3"
+        ],
+        "old_route": [
+          "E5",
+          "E7",
+          "E23"
+        ],
+        "candidate_route": [
+          "E5",
+          "E19",
+          "E11"
+        ],
+        "old_eta": 44.77039224625826,
+        "candidate_eta": 22.13989501815591,
+        "predicted_benefit": 22.63049722810235,
+        "planner_computation_ms": 0.04533299943432212,
+        "decision": "APPLY",
+        "trigger_time": 310.0,
+        "completion_time": 311.0,
+        "simulation_latency": 1.0
+      },
+      {
+        "time": 314.0,
+        "kind": "STATE_CHANGE",
+        "blocked_edges": [
+          "E3",
+          "E7"
+        ],
+        "previous_blocked_edges": [
+          "E3"
+        ]
+      },
+      {
+        "time": 335.0,
+        "kind": "OUTCOME",
+        "status": "SUCCESS"
+      }
+    ]
+  },
+  "demo-headless": {
+    "result": {
+      "scenario": "S08",
+      "strategy": "dynamic",
+      "seed": 1,
+      "profile": "normal",
+      "accident_time": 300,
+      "blockage_time": 307,
+      "initial_route": "E13 -> E5 -> E7 -> E23",
+      "final_route": "E19 -> E27 -> E33 -> E30",
+      "initial_eta": 25.51567360571468,
+      "replanned_eta": 25.71396576546182,
+      "blockage_detection_time": 316.0,
+      "replanning_trigger_time": 310.0,
+      "replanning_completion_time": 311.0,
+      "ambulance_dispatch_time": 301.0,
+      "ambulance_arrival_time": 425.0,
+      "actual_travel_time": 124.0,
+      "response_time": 125.0,
+      "eta_error": 98.48432639428532,
+      "number_of_replans": 2,
+      "successful_route_changes": 2,
+      "route_changed": true,
+      "replanning_latency": 1.0,
+      "planner_computation_ms": 4.89204897894524,
+      "replan_checks": 114,
+      "runtime_seconds": 7.2861465830010275,
+      "error": "",
+      "completion_status": "SUCCESS",
+      "teleported": false,
+      "completed": true,
+      "normal_traffic_waiting_time": 8.03988603988604,
+      "normal_traffic_time_loss": 12.775925925925927,
+      "normal_traffic_arrivals": 336,
+      "network_throughput_vehicles_per_hour": 1344.0,
+      "average_vehicle_speed": 7.385057331740572
+    },
+    "events": [
+      {
+        "time": 301.0,
+        "kind": "DISPATCH",
+        "ambulance": "ambulance0",
+        "hospital": "H1",
+        "route": [
+          "E13",
+          "E5",
+          "E7",
+          "E23"
+        ],
+        "eta": 25.51567360571468,
+        "decision": "APPLY"
+      },
+      {
+        "time": 307.0,
+        "kind": "STATE_CHANGE",
+        "blocked_edges": [
+          "E3"
+        ],
+        "previous_blocked_edges": []
+      },
+      {
+        "time": 311.0,
+        "kind": "EVALUATION",
+        "minimum_commitment_seconds": 10,
+        "minimum_benefit_seconds": 5,
+        "minimum_benefit_fraction": 0.15,
+        "seconds_since_assignment": 10.0,
+        "threshold_seconds": 6.332721995449833,
+        "reason": "benefit_and_commitment_gate",
+        "trigger": "periodic_traffic_evaluation",
+        "blocked_edges": [
+          "E3"
+        ],
+        "old_route": [
+          "E5",
+          "E7",
+          "E23"
+        ],
+        "candidate_route": [
+          "E5",
+          "E19",
+          "E11"
+        ],
+        "old_eta": 42.21814663633222,
+        "candidate_eta": 22.0290623588764,
+        "predicted_benefit": 20.189084277455823,
+        "planner_computation_ms": 0.05629099905490875,
+        "decision": "APPLY",
+        "trigger_time": 310.0,
+        "completion_time": 311.0,
+        "simulation_latency": 1.0
+      },
+      {
+        "time": 316.0,
+        "kind": "STATE_CHANGE",
+        "blocked_edges": [
+          "E3",
+          "E7"
+        ],
+        "previous_blocked_edges": [
+          "E3"
+        ]
+      },
+      {
+        "time": 321.0,
+        "kind": "EVALUATION",
+        "minimum_commitment_seconds": 10,
+        "minimum_benefit_seconds": 5,
+        "minimum_benefit_fraction": 0.15,
+        "seconds_since_assignment": 10.0,
+        "threshold_seconds": 105.84730288212103,
+        "reason": "benefit_and_commitment_gate",
+        "trigger": "periodic_traffic_evaluation",
+        "blocked_edges": [
+          "E3",
+          "E7"
+        ],
+        "old_route": [
+          "E19",
+          "E11"
+        ],
+        "candidate_route": [
+          "E19",
+          "E27",
+          "E33",
+          "E30"
+        ],
+        "old_eta": 705.6486858808069,
+        "candidate_eta": 25.71396576546182,
+        "predicted_benefit": 679.934720115345,
+        "planner_computation_ms": 0.04350000017439015,
+        "decision": "APPLY",
+        "trigger_time": 319.0,
+        "completion_time": 321.0,
+        "simulation_latency": 2.0
+      },
+      {
+        "time": 322.0,
+        "kind": "STATE_CHANGE",
+        "blocked_edges": [
+          "E11",
+          "E3",
+          "E7"
+        ],
+        "previous_blocked_edges": [
+          "E3",
+          "E7"
+        ]
+      },
+      {
+        "time": 425.0,
+        "kind": "OUTCOME",
+        "status": "SUCCESS"
+      }
+    ]
+  }
+}
