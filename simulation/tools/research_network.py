@@ -20,6 +20,8 @@ def build():
                                                   'to':target,'numLanes':'1','speed':'13.9'})
     nodes.write(RESEARCH/'city.nod.xml', encoding='utf-8', xml_declaration=True)
     edges.write(RESEARCH/'city.edg.xml', encoding='utf-8', xml_declaration=True)
+    for source in (RESEARCH/'city.nod.xml', RESEARCH/'city.edg.xml'):
+        source.write_text('\n'.join(line.rstrip() for line in source.read_text().splitlines())+'\n')
     subprocess.run([sumolib.checkBinary('netconvert'), '-n',str(RESEARCH/'city.nod.xml'),
                     '-e',str(RESEARCH/'city.edg.xml'), '-o',str(RESEARCH/'city.net.xml')],check=True)
 

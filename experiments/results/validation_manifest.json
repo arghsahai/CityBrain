@@ -96,5 +96,24 @@
   ],
   "trials": 120,
   "pairs": 60,
-  "audit": "Exact key coverage, matching execution fingerprints, identical paired route input files and valid outcome fields."
+  "audit": "Exact key coverage, matching execution fingerprints, identical paired route input files and valid outcome fields.",
+  "post_validation_formatting": {
+    "validated_input_sha256": "7fea8be3001d95719d93544b03a816cfba8dceeea193cf27ec0b3b93a9a286c6",
+    "current_input_sha256": "49dc04540cb8030f768cff98d18e225bf9797e6f324301ea592f4c51e285de8e",
+    "changes": [
+      {
+        "path": "simulation/network/research/city.nod.xml",
+        "before_sha256": "f54e9d6c4e4ec4da4751cd41d048a70dc376e3b0f78ccb22949200dc8852cc43",
+        "after_sha256": "03bd0b4dd23b46649e1dbbf5a119d9c7575cbbce94d53a3f3f2405f9d30cf150",
+        "change": "strip indentation-only trailing whitespace"
+      },
+      {
+        "path": "simulation/network/research/city.edg.xml",
+        "before_sha256": "6bd31b597619a956a56b028138a5da8470f9204b944781495951c129ff2c74d4",
+        "after_sha256": "7e1c028a1601162cd56cf9bd2c1f9ddaddaa68a7c298ea2fc78aff80f4f62ec7",
+        "change": "strip indentation-only trailing whitespace"
+      }
+    ],
+    "note": "Only unused-at-runtime plain network source XML whitespace changed. Compiled .net.xml and all execution Python are unchanged. Original per-run manifests/checkpoints are preserved; strict resume correctly rejects changed source bytes."
+  }
 }
