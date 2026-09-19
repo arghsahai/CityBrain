@@ -12,13 +12,26 @@ from citybrain.agents.ambulance_agent import AmbulanceAgent
 from citybrain.agents.hospital_agent import HospitalAgent
 from citybrain.agents.signal_agent import SignalAgent
 from citybrain.agents.traffic_agent import TrafficAgent
-from citybrain.core.city_state import CityState
-from citybrain.core.vehicle_state import VehicleState
 from citybrain.models.emergency import Emergency
 from citybrain.perception import adapt_city_state
 from citybrain.planner.emergency_planner import EmergencyPlanner
 from citybrain.planner.plan_validator import PlanValidator
 from citybrain.planner.route_scorer import RouteScorer
+
+
+class CityState(SimpleNamespace):
+    """Test-only structural fixture; main has no canonical core package yet."""
+
+    def __init__(self):
+        super().__init__(vehicles={})
+
+    def update_vehicle(self, vehicle):
+        self.vehicles[vehicle.vehicle_id] = vehicle
+
+
+def VehicleState(vehicle_id, edge, speed, position, lane, acceleration):
+    return SimpleNamespace(vehicle_id=vehicle_id, edge=edge, speed=speed,
+                           position=position, lane=lane, acceleration=acceleration)
 
 
 @pytest.fixture
@@ -178,9 +191,9 @@ class NoTraci:
         if fullname.split(".")[0] == "traci":
             raise AssertionError("TraCI import attempted")
 sys.meta_path.insert(0, NoTraci())
-from citybrain.core.city_state import CityState
+from types import SimpleNamespace
 from citybrain.perception import adapt_city_state
-assert adapt_city_state(CityState())["vehicles"] == {}
+assert adapt_city_state(SimpleNamespace(vehicles={}))["vehicles"] == {}
 assert "traci" not in sys.modules
 '''
     result = subprocess.run([sys.executable, "-B", "-c", code],
