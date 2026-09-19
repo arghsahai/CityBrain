@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 from citybrain.planner.route_scorer import RouteScorer
 from experiments.runners.compare import ROOT, initial_result
-from experiments.runners.s08_audit import ScoreRecorder, S08Audit, decision_reason, validate_evidence
+from experiments.runners.s08_audit import ScoreRecorder, S08Audit, decision_reason, encode_evidence, validate_evidence
 from experiments.runners.s08_validation import committed_revision, expected_keys, strict_json, validate_checkpoint, validate_complete
 
 
@@ -72,8 +72,25 @@ class S08Tests(unittest.TestCase):
                 application={'time':now,'route_after':['E13',edge,target], 'route_index_after':1,
                              'remaining_route_after':[edge,target]}))
         validate_evidence(row,events)
+        infinite=copy.deepcopy(events)
+        infinite[0].update(old_eta=float('inf'),candidate_eta=20,
+                           predicted_benefit=float('inf'),threshold_seconds=float('inf'))
+        with tempfile.TemporaryDirectory() as temporary:
+            from experiments.runners.storage import write_json
+            path=Path(temporary)/'events.json'
+            write_json(path,encode_evidence(infinite))
+            restored=strict_json(path)
+            self.assertEqual(restored[0]['old_eta'],'Infinity')
+            validate_evidence(row,restored)
+            restored[0]['old_eta']=30
+            with self.assertRaises(ValueError):validate_evidence(row,restored)
         events[1]['application']['remaining_route_after']=['wrong']
         with self.assertRaises(ValueError):validate_evidence(row,events)
+
+    def test_evidence_distinguishes_infinite_cost_from_missing_value(self):
+        self.assertEqual(encode_evidence({'cost':float('inf'),'missing':None}),
+                         {'cost':'Infinity','missing':None})
+        with self.assertRaises(ValueError):encode_evidence(float('nan'))
 
     def test_keep_reasons_are_specific(self):
         candidate=SimpleNamespace(route=['a','b'])
@@ -109,6 +126,8 @@ class S08Tests(unittest.TestCase):
                 mtimes={p:p.stat().st_mtime_ns for p in output.glob('*/result.json')}
                 runner.reset_mock();run(output,resume=True);runner.assert_not_called()
                 self.assertEqual(mtimes,{p:p.stat().st_mtime_ns for p in mtimes})
-                route=output/'S08_normal_1_static/routes.rou.xml';route.write_text(route.read_text()+'\n')
+                aggregate=(output/'results.csv').read_bytes()
+                route=output/'S08_peak_10_dynamic/routes.rou.xml';route.write_text(route.read_text()+'\n')
                 with self.assertRaises(ValueError):run(output,resume=True)
                 runner.assert_not_called()
+                self.assertEqual((output/'results.csv').read_bytes(),aggregate)

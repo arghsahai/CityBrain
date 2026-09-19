@@ -130,7 +130,8 @@ def run(output, resume=False):
                 key = ('S08',profile,seed,strategy)
                 directory = output/f'S08_{profile}_{seed}_{strategy}'
                 checkpoint = directory/'result.json'
-                if resume and checkpoint.exists():
+                loaded_checkpoint = resume and checkpoint.exists()
+                if loaded_checkpoint:
                     row = strict_json(checkpoint)
                     validate_checkpoint(row,key)
                     metadata = strict_json(directory/'provenance.json')
@@ -167,10 +168,12 @@ def run(output, resume=False):
                     print(*key,row['completion_status'],'changes',row['successful_route_changes'],flush=True)
                 pair_inputs.append(environment)
                 rows.append(row)
-                write_csv(output/'results.csv',rows)
+                if not loaded_checkpoint:
+                    write_csv(output/'results.csv',rows)
             if pair_inputs[0] != pair_inputs[1]:
                 raise ValueError('Static/dynamic environment mismatch')
     validate_complete(rows,definition)
+    write_csv(output/'results.csv',rows)
     manifest.update(completed_at_utc=manifest['completed_at_utc'] or utc_now(),completed_trials=len(rows))
     write_json(manifest_path,manifest)
     return rows

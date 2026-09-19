@@ -5,6 +5,22 @@ import math
 INCIDENT_EDGES = ('E7', 'E11')
 
 
+def encode_evidence(value):
+    """Preserve infinite road costs explicitly in standards-compliant JSON.
+
+    Null means unavailable, never infinity. This changes logging only.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        if math.isnan(value):
+            raise ValueError('Unexpected NaN in S08 evidence')
+        return 'Infinity' if value > 0 else '-Infinity'
+    if isinstance(value, dict):
+        return {key: encode_evidence(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [encode_evidence(item) for item in value]
+    return value
+
+
 class ScoreRecorder:
     """Wrap the team's scorer to capture actual calls without changing scores."""
     def __init__(self, scorer):
@@ -87,7 +103,12 @@ def validate_evidence(row, events):
             raise ValueError('Applied route is not grounded in a dispatched, travelling ambulance')
         if any(event['observed_roads'][edge]['blocked'] for edge in event['candidate_route']):
             raise ValueError('Applied route contains an observed blocked edge')
-        if not event['current_route_invalid'] and event['predicted_benefit'] < event['threshold_seconds']:
-            raise ValueError('Applied route does not meet the declared benefit threshold')
+        if not event['current_route_invalid']:
+            benefit, threshold = float(event['predicted_benefit']), float(event['threshold_seconds'])
+            if math.isnan(benefit) or math.isnan(threshold) or benefit < threshold:
+                raise ValueError('Applied route does not meet the declared benefit threshold')
+            if math.isinf(benefit) or math.isinf(threshold):
+                if float(event['old_eta']) != math.inf or not math.isfinite(float(event['candidate_eta'])):
+                    raise ValueError('Infinite benefit must reflect an infinite old ETA and finite candidate')
         if event['application']['time'] != event['time']:
             raise ValueError('Application time disagrees with decision time')

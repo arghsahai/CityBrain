@@ -19,7 +19,7 @@ from citybrain.models.emergency import Emergency
 from citybrain.planner.emergency_planner import EmergencyPlanner
 from citybrain.planner.replanner import Replanner
 from experiments.outcomes import classify_step
-from experiments.runners.s08_audit import S08Audit, ScoreRecorder, decision_reason, validate_evidence
+from experiments.runners.s08_audit import S08Audit, ScoreRecorder, decision_reason, encode_evidence, validate_evidence
 from experiments.runners.storage import fingerprint, write_json, write_csv, validate_row, validate_pairs
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -275,7 +275,7 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False, 
                 events.append(event)
     finally:
         if audit:
-            write_json(directory/'events.json', events)
+            write_json(directory/'events.json', encode_evidence(events))
         traci.close()
     trips = ET.parse(directory / 'tripinfo.xml').getroot().findall('tripinfo')
     cars = [t for t in trips if t.get('vType') in ('car', 'slowCar')]
@@ -296,6 +296,7 @@ def trial(scenario, strategy, seed, profile, directory, horizon=900, gui=False, 
     result['runtime_seconds'] = time.perf_counter() - wall_start
     if audit:
         result['candidate_evaluations'] = audit.candidate_evaluations
+        events = encode_evidence(events)
         validate_evidence(result, events)
     validate_row(result)
     write_json(directory/'events.json', events)
