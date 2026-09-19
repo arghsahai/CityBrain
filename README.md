@@ -125,8 +125,17 @@ The adapter now includes road endpoints so the existing SignalAgent can return r
 
 Statistics include n, successes/failures/teleports and rates, successful travel mean/median/SD/min/max, ETA error, normal-traffic metrics, Wilson success intervals and matched-seed travel differences where both strategies succeeded. Charts include per-scenario six-panel comparisons and a demand chart. No significance claim is generated. Replan checks count actual Replanner calls; applied route changes are counted separately.
 
-## Latest checkpoint
+## Validated S05/S07 checkpoint
 
 The controlled 120-run validation is complete; see [research notes](experiments/results/RESEARCH_NOTES.md), [measured summary](experiments/results/validation_matrix.md) and [statistics CSV](experiments/results/validation_matrix_statistics.csv). Both headless and actual sumo-gui demos completed. Twelve assertion-based tests and all ten unchanged teammate scripts pass. The optional 560-run suite remains unexecuted.
 
 The initial integration was merged through PR #2 by the repository workflow. Follow-up validation work is on `feature/experiment-validation`; this task did not modify or merge `main`.
+
+
+## Latest checkpoint: official S08 V2
+
+S08 validation is complete: 60 trials, 30 matched static/dynamic pairs, generated from the clean committed revision `d380cb9216bff8d27bf72b3728220036cdb60a32`. All 30 dynamic trials arrived; all 30 static trials teleported. Dynamic trials made one replan in 10 cases and two in 20. This supports **repeated multi-replan evidence** within the fixed synthetic scenario. No paired successful travel-time comparison is available.
+
+V1 (`b7842f4`) completed 60 trials and is preserved, but was superseded for official analysis after its saved-evidence audit exposed infinite-cost serialization and resume defects. V2 fixes that evidence contract; all six compared simulation outcome fields match V1 across all 60 trials. V2's disk audit and completed-resume dry check passed with zero new SUMO trials. Twenty-two assertion tests and all ten teammate scripts pass.
+
+See [S08 results and limitations](docs/S08_VALIDATION_RESULTS.md), [predeclared protocol](docs/S08_VALIDATION_PROTOCOL.md), [statistics](experiments/results/s08_validation_statistics.csv), and [charts](experiments/results/s08_validation.png). Both versions' compact audit archives are retained in Git. The S05/S07 120-run baseline is unchanged; S06 remains a failure boundary; the optional 560-run suite remains unexecuted. This work is on `feature/s08-multireplan-validation`, based on human-merged PR #3; its PR is left unmerged.

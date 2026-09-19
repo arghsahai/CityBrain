@@ -1,0 +1,7 @@
+profile,strategy,n,success_count,success_rate,teleport_count,teleport_rate,other_failure_count,other_failure_rate,travel_mean,travel_median,travel_sd,zero_replans,one_replan,two_plus_replans,unknown_replans,zero_replans_percent,one_replan_percent,two_plus_replans_percent,mean_route_changes,mean_applied_replan_latency
+heavy,dynamic,10,10,1.0,0,0.0,0,0.0,123.5,123.5,0.5270462766947299,0,2,8,0,0.0,20.0,80.0,1.8,1.1111111111111112
+heavy,static,10,0,0.0,10,1.0,0,0.0,,,,10,0,0,0,100.0,0.0,0.0,0,
+normal,dynamic,10,10,1.0,0,0.0,0,0.0,123.5,123.5,0.5270462766947299,0,6,4,0,0.0,60.0,40.0,1.4,0.8571428571428571
+normal,static,10,0,0.0,10,1.0,0,0.0,,,,10,0,0,0,100.0,0.0,0.0,0,
+peak,dynamic,10,10,1.0,0,0.0,0,0.0,123.5,123.5,0.5270462766947299,0,2,8,0,0.0,20.0,80.0,1.8,1.0555555555555556
+peak,static,10,0,0.0,10,1.0,0,0.0,,,,10,0,0,0,100.0,0.0,0.0,0,

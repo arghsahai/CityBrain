@@ -1,0 +1,992 @@
+[
+  {
+    "profile": "normal",
+    "seed": 1,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.52240722314455,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 47.21814663633222,
+    "candidate_score": 22.0290623588764,
+    "predicted_benefit": 20.189084277455823,
+    "threshold_seconds": 6.332721995449833,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 1,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.1039447480167,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 720.6486858808069,
+    "candidate_score": 25.71396576546182,
+    "predicted_benefit": 679.934720115345,
+    "threshold_seconds": 105.84730288212103,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 2,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 171.64780943415622,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 32.773723730067886,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 3,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 170.10178159586155,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 33.00846054073104,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 4,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 170.8542708653398,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 32.94899535733644,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 5,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 172.21476299202567,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 33.04150233299279,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 113.57858128687367,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 64.80551591497361,
+    "candidate_score": 19.588950564675734,
+    "predicted_benefit": 30.216565350297877,
+    "threshold_seconds": 7.470827387246041,
+    "simulation_latency": 2.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 221.33507983612452,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 431.30992223250576,
+    "candidate_score": 25.62535824640125,
+    "predicted_benefit": 390.6845639861045,
+    "threshold_seconds": 62.44648833487586,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 7,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 171.8211423396462,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 32.711554118272296,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 8,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.40132286096923,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 41.198086070832694,
+    "candidate_score": 21.57590538463174,
+    "predicted_benefit": 14.622180686200963,
+    "threshold_seconds": 5.429712910624905,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 8,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 218.13435144804478,
+    "reason": "active_route_blocked",
+    "current_plan_score": "Infinity",
+    "candidate_score": 25.720971767856163,
+    "predicted_benefit": 6218.88321185732,
+    "threshold_seconds": 936.6906275437764,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.38575536059217,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 44.27493303399481,
+    "candidate_score": 22.36931180400967,
+    "predicted_benefit": 16.905621229985144,
+    "threshold_seconds": 5.891239955099222,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 218.69279732695375,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 346.44326953220184,
+    "candidate_score": 25.363121718822985,
+    "predicted_benefit": 306.08014781337886,
+    "threshold_seconds": 49.71649042983027,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "normal",
+    "seed": 10,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 169.64633494136388,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 32.695187564385215,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 1,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.52240722314455,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 48.234535435232665,
+    "candidate_score": 22.09680335969544,
+    "predicted_benefit": 21.137732075537226,
+    "threshold_seconds": 6.485180315284899,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 1,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 216.75519022092286,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 720.7587489606233,
+    "candidate_score": 25.82402884527828,
+    "predicted_benefit": 679.934720115345,
+    "threshold_seconds": 105.86381234409349,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 2,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.93444839883595,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 64.25666089041788,
+    "candidate_score": 22.100809945967782,
+    "predicted_benefit": 27.155850944450094,
+    "threshold_seconds": 7.388499133562681,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 2,
+    "strategy": "dynamic",
+    "time": 320.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 205.67794037969378,
+    "reason": "active_route_blocked",
+    "current_plan_score": "Infinity",
+    "candidate_score": 26.839370454011267,
+    "predicted_benefit": 1520.0553548915686,
+    "threshold_seconds": 232.03420880183697,
+    "simulation_latency": 0.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 3,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 170.10178159586155,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 33.235321561536566,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 4,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.16395817450248,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 44.915361362290746,
+    "candidate_score": 22.71242177304967,
+    "predicted_benefit": 17.20293958924107,
+    "threshold_seconds": 5.98730420434361,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 4,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 218.49264694120734,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 256.10613070437284,
+    "candidate_score": 25.516694787526863,
+    "predicted_benefit": 215.58943591684599,
+    "threshold_seconds": 36.16591960565592,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 5,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.65772215337493,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 59.91622258686233,
+    "candidate_score": 22.292113073156926,
+    "predicted_benefit": 22.624109513705406,
+    "threshold_seconds": 6.737433388029349,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 5,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.8292541496741,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 621.7639237929129,
+    "candidate_score": 25.62991459754052,
+    "predicted_benefit": 581.1340091953724,
+    "threshold_seconds": 91.01458856893693,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 113.57858128687367,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 65.30950156932656,
+    "candidate_score": 20.272546586226824,
+    "predicted_benefit": 30.03695498309974,
+    "threshold_seconds": 7.546425235398984,
+    "simulation_latency": 2.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 221.6653698578253,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 431.27664517849166,
+    "candidate_score": 25.592081192387123,
+    "predicted_benefit": 390.68456398610454,
+    "threshold_seconds": 62.44149677677375,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 7,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.57377583840862,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 39.593714075633876,
+    "candidate_score": 22.129871275291972,
+    "predicted_benefit": 12.463842800341904,
+    "threshold_seconds": 5.189057111345082,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 7,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 218.32576657748376,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 437.70732182091143,
+    "candidate_score": 25.458304072319006,
+    "predicted_benefit": 397.24901774859245,
+    "threshold_seconds": 63.40609827313671,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 8,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 172.637525370424,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 33.79384787794147,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.38575536059217,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 45.39634945853088,
+    "candidate_score": 22.912307288394004,
+    "predicted_benefit": 17.484042170136874,
+    "threshold_seconds": 6.059452418779632,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.71544812494483,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 346.74973462699086,
+    "candidate_score": 25.669586813612014,
+    "predicted_benefit": 306.08014781337886,
+    "threshold_seconds": 49.76246019404863,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 10,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 104.54170086570085,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 68.59718540889438,
+    "candidate_score": 22.37831792514349,
+    "predicted_benefit": 31.218867483750877,
+    "threshold_seconds": 8.039577811334155,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "heavy",
+    "seed": 10,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 215.38395336793735,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 1096.331998474518,
+    "candidate_score": 26.300900854193877,
+    "predicted_benefit": 1055.031097620324,
+    "threshold_seconds": 162.1997997711777,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 1,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 171.61868726535266,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 32.808866981156854,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 2,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.93444839883595,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 65.31809074178331,
+    "candidate_score": 22.73173972398007,
+    "predicted_benefit": 27.58635101780324,
+    "threshold_seconds": 7.547713611267496,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 2,
+    "strategy": "dynamic",
+    "time": 320.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 205.46049038651927,
+    "reason": "active_route_blocked",
+    "current_plan_score": "Infinity",
+    "candidate_score": 27.114265430411425,
+    "predicted_benefit": 1520.0553548915684,
+    "threshold_seconds": 232.07544304829696,
+    "simulation_latency": 0.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 3,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 105.98382281316444,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 41.805719366751255,
+    "candidate_score": 23.128093991055422,
+    "predicted_benefit": 13.67762537569584,
+    "threshold_seconds": 5.520857905012689,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 3,
+    "strategy": "dynamic",
+    "time": 320.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 202.88068604829718,
+    "reason": "active_route_blocked",
+    "current_plan_score": "Infinity",
+    "candidate_score": 26.884351370830267,
+    "predicted_benefit": 5045.085440137374,
+    "threshold_seconds": 760.7954687262306,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 4,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.16395817450248,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 46.17273022629764,
+    "candidate_score": 23.700016317873356,
+    "predicted_benefit": 17.472713908424282,
+    "threshold_seconds": 6.175909533944646,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 4,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.9933827751223,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 256.30296305605157,
+    "candidate_score": 25.71352713920557,
+    "predicted_benefit": 215.58943591684596,
+    "threshold_seconds": 36.19544445840773,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 5,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.65772215337493,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 59.501604179464074,
+    "candidate_score": 23.210652311180425,
+    "predicted_benefit": 21.290951868283642,
+    "threshold_seconds": 6.67524062691961,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 5,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.04015787866027,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 622.0056322564972,
+    "candidate_score": 25.87162306112485,
+    "predicted_benefit": 581.1340091953723,
+    "threshold_seconds": 91.05084483847457,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 113.57858128687367,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 64.80551591497361,
+    "candidate_score": 20.934540708004924,
+    "predicted_benefit": 28.870975206968687,
+    "threshold_seconds": 7.470827387246041,
+    "simulation_latency": 2.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 6,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 221.74832912937362,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 431.133542147235,
+    "candidate_score": 25.448978161130498,
+    "predicted_benefit": 390.68456398610454,
+    "threshold_seconds": 62.42003132208525,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 7,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 107.57377583840862,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 39.143859911956305,
+    "candidate_score": 22.61185461046746,
+    "predicted_benefit": 11.532005301488844,
+    "threshold_seconds": 5.121578986793446,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 7,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 218.63181695901383,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 437.6328347762761,
+    "candidate_score": 25.38381702768367,
+    "predicted_benefit": 397.24901774859245,
+    "threshold_seconds": 63.394925216441415,
+    "simulation_latency": 1.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 8,
+    "strategy": "dynamic",
+    "time": 316.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 172.637525370424,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": "Infinity",
+    "candidate_score": 33.98260634492636,
+    "predicted_benefit": "Infinity",
+    "threshold_seconds": "Infinity",
+    "simulation_latency": 0.0,
+    "route": [
+      "E5",
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 106.38575536059217,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 45.099191783943674,
+    "candidate_score": 23.946059660032198,
+    "predicted_benefit": 16.153132123911476,
+    "threshold_seconds": 6.014878767591551,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 9,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 217.53743306925116,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 346.86573857999707,
+    "candidate_score": 25.78559076661823,
+    "predicted_benefit": 306.08014781337886,
+    "threshold_seconds": 49.779860786999556,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 10,
+    "strategy": "dynamic",
+    "time": 311.0,
+    "physical_edge": "E5",
+    "distance_travelled_m": 104.54170086570085,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 68.53595416646475,
+    "candidate_score": 23.137877763009456,
+    "predicted_benefit": 30.398076403455292,
+    "threshold_seconds": 8.030393124969711,
+    "simulation_latency": 1.0,
+    "route": [
+      "E5",
+      "E19",
+      "E11"
+    ]
+  },
+  {
+    "profile": "peak",
+    "seed": 10,
+    "strategy": "dynamic",
+    "time": 321.0,
+    "physical_edge": "E19",
+    "distance_travelled_m": 216.59294685681348,
+    "reason": "material_benefit_and_commitment_satisfied",
+    "current_plan_score": 1095.8876046284768,
+    "candidate_score": 25.856507008152537,
+    "predicted_benefit": 1055.0310976203243,
+    "threshold_seconds": 162.1331406942715,
+    "simulation_latency": 2.0,
+    "route": [
+      "E19",
+      "E27",
+      "E33",
+      "E30"
+    ]
+  }
+]

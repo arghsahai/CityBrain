@@ -1,0 +1,39 @@
+{
+  "git_commit": "d380cb9216bff8d27bf72b3728220036cdb60a32",
+  "execution_fingerprint": "91f842136414cb68242ca720463f59e26836cbf74e7c9a827455f09b30dd273e",
+  "unique_trials": 60,
+  "complete_pairs": 30,
+  "applied_replans": 50,
+  "checkpoint_roundtrip": "PASS",
+  "aggregate_matches_checkpoints": true,
+  "resume_loaded": 60,
+  "resume_executed_new_trials": 0,
+  "resume_trial_hashes_and_mtimes_unchanged": true,
+  "resume_aggregate_and_manifest_bytes_unchanged": true,
+  "v1_v2_compared_fields": [
+    "completion_status",
+    "actual_travel_time",
+    "successful_route_changes",
+    "initial_route",
+    "final_route",
+    "teleported"
+  ],
+  "v1_v2_outcome_differences": [],
+  "outcomes": {
+    "TELEPORTED": 30,
+    "SUCCESS": 30
+  },
+  "final_assertion_tests_passed": 22,
+  "final_teammate_scripts_passed": [
+    "test_ambulance_agent.py",
+    "test_emergency_planner.py",
+    "test_hospital_agent.py",
+    "test_models.py",
+    "test_plan_validator.py",
+    "test_police_agent.py",
+    "test_replanner.py",
+    "test_route_scorer.py",
+    "test_signal_agent.py",
+    "test_traffic_agent.py"
+  ]
+}
