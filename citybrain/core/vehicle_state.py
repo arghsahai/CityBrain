@@ -22,3 +22,13 @@ class VehicleState:
     route_index: int = 0
     acceleration: float = 0.0
     vehicle_type: str = ""
+
+    @property
+    def edge(self) -> str:
+        """Alias for edge_id (adapt_city_state compatibility)."""
+        return self.edge_id
+
+    @property
+    def lane(self) -> str:
+        """Alias for lane_id (adapt_city_state compatibility)."""
+        return self.lane_id

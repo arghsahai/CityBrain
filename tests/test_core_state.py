@@ -49,6 +49,14 @@ class TestVehicleState(unittest.TestCase):
         self.assertEqual(v.acceleration, 0.0)
         self.assertEqual(v.vehicle_type, "")
 
+    def test_edge_lane_aliases(self):
+        v = VehicleState(
+            vehicle_id="v3", edge_id="E7", lane_id="E7_1",
+            speed=5.0, position=(0.0, 0.0),
+        )
+        self.assertEqual(v.edge, "E7")
+        self.assertEqual(v.lane, "E7_1")
+
 
 class TestRoadState(unittest.TestCase):
     def test_creation_all_fields(self):
