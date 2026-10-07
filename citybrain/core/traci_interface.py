@@ -131,3 +131,47 @@ class TraCIInterface:
         advisory-only in the current architecture.
         """
         self.traci.trafficlight.setPhase(signal_id, phase)
+    def route_position(self, vehicle_id):
+        route = list(self.traci.vehicle.getRoute(vehicle_id))
+        index = self.traci.vehicle.getRouteIndex(vehicle_id)
+        edge = self.traci.vehicle.getRoadID(vehicle_id)
+        if not isinstance(index, int) or index < 0 or index >= len(route):
+            raise ValueError('invalid_route_index')
+        if not edge.startswith(':') and route[index] != edge:
+            raise ValueError('physical_edge_route_index_mismatch')
+        return {'edge': edge, 'route_index': index, 'route': route,
+                'remaining_route': route[index:]}
+
+    def _allowed_lane(self, lane_id, vehicle_class):
+        allowed = self.traci.lane.getAllowed(lane_id)
+        denied = self.traci.lane.getDisallowed(lane_id)
+        return (not allowed or vehicle_class in allowed) and vehicle_class not in denied
+
+    def edge_usable(self, edge_id, vehicle_id):
+        vehicle_class = self.traci.vehicle.getVehicleClass(vehicle_id)
+        key = (edge_id, vehicle_class)
+        cache = self.__dict__.setdefault('_usable_cache', {})
+        if key not in cache:
+            if edge_id.startswith(':') or edge_id not in self.road_ids():
+                cache[key] = False
+            else:
+                cache[key] = any(self._allowed_lane(f'{edge_id}_{i}', vehicle_class)
+                                 for i in range(self.traci.edge.getLaneNumber(edge_id)))
+        return cache[key]
+
+    def successors(self, edge_id, vehicle_id):
+        vehicle_class = self.traci.vehicle.getVehicleClass(vehicle_id)
+        key = (edge_id, vehicle_class)
+        cache = self.__dict__.setdefault('_successor_cache', {})
+        if key not in cache:
+            following = set()
+            if self.edge_usable(edge_id, vehicle_id):
+                for i in range(self.traci.edge.getLaneNumber(edge_id)):
+                    lane = f'{edge_id}_{i}'
+                    if self._allowed_lane(lane, vehicle_class):
+                        for link in self.traci.lane.getLinks(lane):
+                            target = link[0]
+                            if self._allowed_lane(target, vehicle_class):
+                                following.add(self.traci.lane.getEdgeID(target))
+            cache[key] = following
+        return set(cache[key])

@@ -21,6 +21,7 @@ class CityState:
     simulation_time: float = 0.0
     vehicles: Dict[str, VehicleState] = field(default_factory=dict)
     roads: Dict[str, RoadState] = field(default_factory=dict)
+    terminal_vehicles: Dict[str, str] = field(default_factory=dict)
 
     def update_vehicle(self, vehicle: VehicleState):
         """Add or update a vehicle."""

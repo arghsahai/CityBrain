@@ -47,6 +47,7 @@ class CityBrainCore:
 
         # Per-vehicle active routes for route invalidation detection.
         self._active_routes = {}
+        self.reserved_ambulances = set()
 
     # ---------------------------------------------------------
     # State refresh
@@ -65,6 +66,11 @@ class CityBrainCore:
         for vehicle_id in removals:
             self._active_routes.pop(vehicle_id, None)
 
+        # Keep invalidation tied to observed remaining progress, not P0 prefixes.
+        for vehicle_id in list(self._active_routes):
+            vehicle = city_state.get_vehicle(vehicle_id)
+            if vehicle and 0 <= vehicle.route_index < len(vehicle.route):
+                self._active_routes[vehicle_id] = list(vehicle.route[vehicle.route_index:])
         return city_state, removals
 
     def refresh_state_with_events(self, blocked_edges=None):
@@ -154,7 +160,8 @@ class CityBrainCore:
                 if vehicle.vehicle_type == "ambulance":
                     ambulances.append({
                         "id": vehicle.vehicle_id,
-                        "available": True,
+                        "available": (vehicle.vehicle_id not in self.reserved_ambulances
+                                      and vehicle.vehicle_id not in self.city_state.terminal_vehicles),
                         "edge": vehicle.edge_id,
                         "speed": vehicle.speed,
                     })
@@ -178,6 +185,7 @@ class CityBrainCore:
         vehicle_id: str,
         route: list,
         plan_id: str = None,
+        hospital=None,
     ) -> RouteResult:
         """
         Apply a planner-selected route to SUMO with verification.
@@ -190,6 +198,7 @@ class CityBrainCore:
             route=list(route),
             simulation_time=self.city_state.simulation_time,
             plan_id=plan_id,
+            hospital=hospital,
         )
 
         result = self.route_executor.execute(
@@ -198,7 +207,7 @@ class CityBrainCore:
         )
 
         if result.success:
-            self._active_routes[vehicle_id] = list(route)
+            self._active_routes[vehicle_id] = list(result.observed_suffix)
 
         return result
 

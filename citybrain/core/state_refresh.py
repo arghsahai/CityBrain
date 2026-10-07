@@ -116,13 +116,21 @@ def refresh_city_state(
     tracked_vehicle_ids = set(city_state.vehicles.keys())
 
     removals = {}
+    # Teleports are terminal even if SUMO keeps/reinserts the ID as active.
+    for vehicle_id in teleported_ids:
+        if city_state.terminal_vehicles.get(vehicle_id) != TELEPORTED:
+            removals[vehicle_id] = TELEPORTED
+        city_state.terminal_vehicles[vehicle_id] = TELEPORTED
 
     # Remove vehicles that have disappeared from SUMO.
     for vehicle_id in tracked_vehicle_ids - active_vehicle_ids:
         reason = _classify_removal(
             vehicle_id, arrived_ids, teleported_ids,
         )
-        removals[vehicle_id] = reason
+        previous = city_state.terminal_vehicles.get(vehicle_id)
+        if previous is None:
+            city_state.terminal_vehicles[vehicle_id] = reason
+            removals[vehicle_id] = reason
         city_state.remove_vehicle(vehicle_id)
 
     # Refresh every active vehicle.

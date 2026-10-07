@@ -24,6 +24,11 @@ def _build_traci_mock():
     traci.vehicle.getRoute.return_value = ("E1", "E2", "E3")
     traci.vehicle.getRouteIndex.return_value = 0
     traci.vehicle.setRoute.return_value = None
+    traci.vehicle.getVehicleClass.return_value = 'emergency'
+    traci.lane.getAllowed.return_value = ()
+    traci.lane.getDisallowed.return_value = ()
+    traci.lane.getLinks.side_effect = lambda lane: {'E1_0': [('E2_0',)], 'E2_0': [('E3_0',)]}.get(lane, [])
+    traci.lane.getEdgeID.side_effect = lambda lane: lane.rsplit('_', 1)[0]
 
     # edges
     traci.edge.getIDList.return_value = ()
@@ -87,6 +92,8 @@ class TestExecuteRouteIntegration(unittest.TestCase):
         self.core = CityBrainCore(self.traci)
 
     def test_execute_route_success_registers_active(self):
+        # Supply the physical topology now required by executor preflight.
+        self.traci.edge.getIDList.return_value = ('E1', 'E2', 'E3')
         # Make vehicle exist in SUMO.
         self.traci.vehicle.getIDList.return_value = ("amb0",)
         self.traci.vehicle.getRoute.return_value = ("E1", "E2", "E3")
