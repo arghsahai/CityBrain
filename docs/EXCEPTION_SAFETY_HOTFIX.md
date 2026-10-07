@@ -61,3 +61,39 @@ cached-permission, signal-advisory and archive-path portability limitations rema
 
 Run `python -m pytest -q`, the ten root `test_*.py` scripts, and the smoke commands in
 [FINAL_INTEGRATION.md](FINAL_INTEGRATION.md). Use a fresh output directory for each run.
+
+## Fresh SUMO verification
+
+Generating commit: `b88015815a20cb1f394638ecb55d8e611cc79682`; all three runs recorded
+a clean working tree. Python 3.13.5 / SUMO 1.27.1, normal demand, seed 1, existing
+catalogue plus generic topology fallback. No policy or scenario settings changed.
+
+| Scenario | Outcome | Terminal time | Travel time | Accepted revisions |
+|---|---|---:|---:|---|
+| S05 | SUCCESS | 335 s | 34 s | P0, P1 |
+| S06 | NO_ROUTE | 316 s | unavailable | P0, P1 |
+| S08 | SUCCESS | 425 s | 124 s | P0, P1, P2 |
+
+S08 acceptance times were 301, 311 and 316 seconds. Every accepted route has preceding
+verified physical read-back. Both successful runs have hospital arrival evidence and no
+teleport. All three cleared active state/reservations and recorded zero evidence failures.
+
+```sh
+python -m citybrain.integration.smoke --candidate-source legacy-catalog --output data/output/integration/exception-safety-hotfix-smokes
+python -O -m citybrain.integration.verify data/output/integration/exception-safety-hotfix-smokes
+```
+
+Both commands exited zero. Existing directories are not overwritten: choose a new output
+name when reproducing. Raw outputs remain in that ignored integration directory, separate
+from official experiments. Event stream SHA-256 values:
+
+- S05: `6de33c814191364d26a7e886226201ec12ea721c69eabe6cd8caa2858bd83f05` (77 records)
+- S06: `a71bde0d6cb89a890353634cf8c15a06d4b0674d74669320407675b907570eac` (40 records)
+- S08: `d2887ccda8403b05f77b2ca1f3e9420316b4228e9478220f412f51cf619a33c7` (322 records)
+
+The exact review fault injection now leaves logical/physical/registered P1 all equal to
+`[a, c, z]`, with no terminal error caused by the writer. Subsequent TIMEOUT finalization
+with failing TERMINAL and SUMMARY writes leaves active plan null, reservations empty,
+registered routes empty, accepted P1 history preserved, and repeated steps unchanged.
+In-memory diagnostics report OSError, errno 28, successful physical verification,
+completed logical acceptance and completed cleanup. No real disk was damaged or filled.
