@@ -10,6 +10,18 @@ class TestRouteExecutor(unittest.TestCase):
     def setUp(self):
         self.traci_mock = MagicMock()
         self.executor = RouteExecutor()
+        self.traci_mock.current_route.return_value = ['E1', 'E2', 'E3']
+        self.traci_mock.current_route_suffix.return_value = ['E1', 'E2', 'E3']
+        self.traci_mock.edge_usable.return_value = True
+        links = {'E1': {'E2'}, 'E2': {'E3'}, 'E3': {'E4'}, 'E13': {'E5'},
+                 'E5': {'E7', 'E19'}, 'E7': {'E23'}, 'E19': {'E11', 'E23'}}
+        self.traci_mock.successors.side_effect = lambda edge, vehicle: links.get(edge, set())
+        def position(vehicle):
+            full = self.traci_mock.current_route(vehicle)
+            suffix = self.traci_mock.current_route_suffix(vehicle)
+            return {'edge': suffix[0], 'route': full,
+                    'route_index': len(full)-len(suffix), 'remaining_route': suffix}
+        self.traci_mock.route_position.side_effect = position
 
     def test_successful_execution(self):
         self.traci_mock.vehicle_exists.return_value = True
@@ -71,7 +83,11 @@ class TestRouteExecutor(unittest.TestCase):
 
     def test_readback_exception_readback_failed(self):
         self.traci_mock.vehicle_exists.return_value = True
-        self.traci_mock.current_route.side_effect = Exception("TraCI disconnect")
+        self.traci_mock.route_position.side_effect = [
+            {'edge': 'E1', 'route': ['E1', 'E2'], 'route_index': 0,
+             'remaining_route': ['E1', 'E2']},
+            RuntimeError('TraCI disconnect'), RuntimeError('TraCI disconnect')]
+
 
         action = RouteAction(vehicle_id="amb0", route=["E1", "E2"])
         result = self.executor.execute(self.traci_mock, action)
@@ -81,6 +97,13 @@ class TestRouteExecutor(unittest.TestCase):
 
     def test_suffix_mismatch(self):
         self.traci_mock.vehicle_exists.return_value = True
+        self.traci_mock.route_position.side_effect = [
+            {'edge': 'E1', 'route': ['E1', 'E2'], 'route_index': 0,
+             'remaining_route': ['E1', 'E2']},
+            {'edge': 'E1', 'route': ['X1', 'X2'], 'route_index': 0,
+             'remaining_route': ['X1', 'X2']},
+            {'edge': 'E1', 'route': ['E1', 'E2'], 'route_index': 0,
+             'remaining_route': ['E1', 'E2']}]
         self.traci_mock.current_route.return_value = ["X1", "X2"]
         self.traci_mock.current_route_suffix.return_value = ["X1", "X2"]
 

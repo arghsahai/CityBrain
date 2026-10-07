@@ -1,224 +1,112 @@
-"""Verified route execution through TraCI.
-
-Flow:
-    planner decision
-        → RouteAction
-        → Executor pre-flight checks
-        → TraCI setRoute
-        → TraCI getRoute read-back
-        → suffix verification
-        → RouteResult
-
-The executor does NOT decide which route is best.
-The planner decides; the executor applies and verifies.
-"""
-
+"""Physical execution with exact active-suffix verification and failure recovery."""
 from dataclasses import dataclass, field
 from typing import List, Optional
+from citybrain.integration.routing import validate_route
 
 
 @dataclass
 class RouteAction:
-    """Structured request to apply a route to a vehicle."""
-
     vehicle_id: str
     route: List[str]
     simulation_time: float = 0.0
     plan_id: Optional[str] = None
+    hospital: Optional[dict] = None
 
 
 @dataclass
 class RouteResult:
-    """Structured outcome of a route execution attempt."""
-
     success: bool
     vehicle_id: str
     requested_route: List[str]
     observed_route: List[str] = field(default_factory=list)
     observed_suffix: List[str] = field(default_factory=list)
     simulation_time: float = 0.0
-    reason: str = ""
-    verification: str = "UNVERIFIED"
+    reason: str = ''
+    verification: str = 'UNVERIFIED'
     plan_id: Optional[str] = None
+    intended_suffix: List[str] = field(default_factory=list)
+    physical_edge: str = ''
+    route_index: Optional[int] = None
+    previous_suffix: List[str] = field(default_factory=list)
+    safe_to_continue: bool = True
+    rollback_attempted: bool = False
+    rollback_verified: bool = False
 
 
 class RouteExecutor:
-    """
-    Structured route execution with read-back verification.
-
-    Supports successive replanning (P0 → P1 → P2 → ...).
-    Every new route is applied from the vehicle's CURRENT position.
-
-    The executor does NOT call an action successful merely because
-    setRoute didn't throw an exception.  It verifies the route
-    was actually applied by reading it back.
-
-    Travelled-prefix handling:
-        SUMO may preserve the already-travelled route prefix.
-        Therefore the requested entire route ≠ necessarily the
-        returned entire route.  Verification checks the remaining
-        suffix from the vehicle's current route index.
-    """
-
-    def execute(self, traci_interface, action: RouteAction) -> RouteResult:
-        """
-        Execute a route action with pre-flight checks and verification.
-
-        Pre-flight:
-            1. Vehicle exists in SUMO
-            2. Route is non-empty
-            3. Route contains only strings
-
-        Execution:
-            setRoute(vehicle_id, route)
-
-        Verification:
-            getRoute() → compare suffix from current position
-        """
-
-        vehicle_id = action.vehicle_id
-        route = list(action.route)
-
-        # ---------------------------------------------------------
-        # Pre-flight checks
-        # ---------------------------------------------------------
-
-        if not route:
-            return RouteResult(
-                success=False,
-                vehicle_id=vehicle_id,
-                requested_route=route,
-                simulation_time=action.simulation_time,
-                reason="empty_route",
-                verification="PREFLIGHT_FAILED",
-                plan_id=action.plan_id,
-            )
-
-        if not all(isinstance(e, str) and e for e in route):
-            return RouteResult(
-                success=False,
-                vehicle_id=vehicle_id,
-                requested_route=route,
-                simulation_time=action.simulation_time,
-                reason="invalid_edge_in_route",
-                verification="PREFLIGHT_FAILED",
-                plan_id=action.plan_id,
-            )
-
-        if not traci_interface.vehicle_exists(vehicle_id):
-            return RouteResult(
-                success=False,
-                vehicle_id=vehicle_id,
-                requested_route=route,
-                simulation_time=action.simulation_time,
-                reason="vehicle_not_found",
-                verification="PREFLIGHT_FAILED",
-                plan_id=action.plan_id,
-            )
-
-        # ---------------------------------------------------------
-        # Apply route
-        # ---------------------------------------------------------
-
+    def execute(self, interface, action):
+        result = RouteResult(False, action.vehicle_id, list(action.route),
+                             simulation_time=action.simulation_time, plan_id=action.plan_id)
+        if not action.route:
+            result.reason = 'empty_route'; result.verification = 'PREFLIGHT_FAILED'; return result
+        if not all(isinstance(e, str) and e for e in action.route):
+            result.reason = 'invalid_edge_in_route'; result.verification = 'PREFLIGHT_FAILED'; return result
+        if not interface.vehicle_exists(action.vehicle_id):
+            result.reason = 'vehicle_not_found'; result.verification = 'PREFLIGHT_FAILED'; return result
         try:
-            traci_interface.apply_route(vehicle_id, route)
-        except Exception as exc:
-            return RouteResult(
-                success=False,
-                vehicle_id=vehicle_id,
-                requested_route=route,
-                simulation_time=action.simulation_time,
-                reason=f"setRoute_failed: {exc}",
-                verification="EXECUTION_FAILED",
-                plan_id=action.plan_id,
-            )
-
-        # ---------------------------------------------------------
-        # Read-back verification
-        # ---------------------------------------------------------
-
+            before = interface.route_position(action.vehicle_id)
+            route = list(action.route)
+            # Legacy full-route requests are allowed only with an exact observed
+            # travelled prefix. Runtime callers always submit an active suffix.
+            index = before['route_index']
+            if route[0] != before['edge'] and index > 0:
+                if route[:index] == before['route'][:index] and route[index:index+1] == [before['edge']]:
+                    route = route[index:]
+            result.previous_suffix = list(before['remaining_route'])
+            result.intended_suffix = route
+            result.physical_edge = before['edge']
+            validation = validate_route(interface, action.vehicle_id, route, action.hospital, before)
+            if not validation.valid:
+                result.reason = validation.reason
+                result.verification = 'DEFERRED' if validation.deferred else 'PREFLIGHT_FAILED'
+                return result
+        except Exception as error:
+            result.reason = f'preflight_failed: {error}'; result.verification = 'PREFLIGHT_FAILED'; return result
         try:
-            observed_route = traci_interface.current_route(
-                vehicle_id
-            )
-            observed_suffix = traci_interface.current_route_suffix(
-                vehicle_id
-            )
-        except Exception as exc:
-            return RouteResult(
-                success=False,
-                vehicle_id=vehicle_id,
-                requested_route=route,
-                simulation_time=action.simulation_time,
-                reason=f"readback_failed: {exc}",
-                verification="READBACK_FAILED",
-                plan_id=action.plan_id,
-            )
-
-        # Verify the remaining suffix contains the requested route's
-        # forward portion.  SUMO may prepend already-traversed edges.
-        verification = self._verify_suffix(
-            requested_route=route,
-            observed_suffix=observed_suffix,
-        )
-
-        return RouteResult(
-            success=verification == "VERIFIED",
-            vehicle_id=vehicle_id,
-            requested_route=route,
-            observed_route=observed_route,
-            observed_suffix=observed_suffix,
-            simulation_time=action.simulation_time,
-            reason="route_applied" if verification == "VERIFIED" else "suffix_mismatch",
-            verification=verification,
-            plan_id=action.plan_id,
-        )
+            interface.apply_route(action.vehicle_id, route)
+        except Exception as error:
+            result.reason = f'setRoute_failed: {error}'; result.verification = 'EXECUTION_FAILED'
+            self._recover(interface, action.vehicle_id, before, result)
+            return result
+        try:
+            after = interface.route_position(action.vehicle_id)
+            result.observed_route = after['route']
+            result.observed_suffix = after['remaining_route']
+            result.route_index = after['route_index']
+            # There is no simulationStep between action and read-back. Physical
+            # movement cannot justify accepting a shorter route or extra edges.
+            matched = after['edge'] == before['edge'] and self._verify_suffix(route, after['remaining_route']) == 'VERIFIED'
+            result.verification = 'VERIFIED' if matched else 'SUFFIX_MISMATCH'
+            result.reason = 'route_applied' if matched else 'suffix_mismatch'
+            result.success = matched
+        except Exception as error:
+            result.reason = f'readback_failed: {error}'; result.verification = 'READBACK_FAILED'
+        if not result.success:
+            self._recover(interface, action.vehicle_id, before, result)
+        return result
 
     @staticmethod
-    def _verify_suffix(
-        requested_route: List[str],
-        observed_suffix: List[str],
-    ) -> str:
-        """
-        Verify that the observed suffix matches the requested route.
+    def _recover(interface, vehicle_id, before, result):
+        """Reconcile possible partial physical changes before allowing retries."""
+        result.safe_to_continue = False
+        try:
+            current = interface.route_position(vehicle_id)
+            if current['edge'] != before['edge']:
+                return
+            if current['remaining_route'] == before['remaining_route']:
+                result.safe_to_continue = True
+                return
+            result.rollback_attempted = True
+            interface.apply_route(vehicle_id, before['remaining_route'])
+            observed = interface.route_position(vehicle_id)
+            result.rollback_verified = (observed['edge'] == before['edge'] and
+                                        observed['remaining_route'] == before['remaining_route'])
+            result.safe_to_continue = result.rollback_verified
+        except Exception:
+            pass
 
-        The vehicle's current edge may already be the first edge
-        of the requested route.  SUMO preserves the travelled
-        prefix, so the observed suffix should end with the
-        requested route or match it from the vehicle's current
-        position.
-
-        A direct suffix match is the strictest check.  If the
-        observed suffix contains all requested edges in order
-        (possibly with the current-edge prefix already consumed),
-        the route is considered verified.
-        """
-
-        if not requested_route:
-            return "VERIFIED"
-
+    @staticmethod
+    def _verify_suffix(requested_route, observed_suffix):
         if not observed_suffix:
-            return "SUFFIX_EMPTY"
-
-        # Check if the requested route appears as a suffix of
-        # the observed suffix (handles travelled prefix).
-        if observed_suffix[-len(requested_route):] == requested_route:
-            return "VERIFIED"
-
-        # Check if the observed suffix itself is a suffix of the
-        # requested route (vehicle has already passed first edges).
-        for i in range(len(requested_route)):
-            if requested_route[i:] == observed_suffix:
-                return "VERIFIED"
-
-        # Check if the observed suffix starts with a subset of
-        # the requested route (partial overlap from current position).
-        for i in range(len(requested_route)):
-            remaining = requested_route[i:]
-            if (
-                len(observed_suffix) >= len(remaining)
-                and observed_suffix[:len(remaining)] == remaining
-            ):
-                return "VERIFIED"
-
-        return "SUFFIX_MISMATCH"
+            return 'SUFFIX_EMPTY'
+        return 'VERIFIED' if list(requested_route) == list(observed_suffix) else 'SUFFIX_MISMATCH'
