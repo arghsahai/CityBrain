@@ -91,5 +91,6 @@ Single emergency; static hospital availability; bounded candidate search; cached
 lane permissions; conservative one-second-step arrival evidence; full evidence retained
 in memory. This is a headless software/SUMO validation, not a new GUI acceptance test,
 citywide calibration, multi-seed benchmark, physical signal controller or hardware demo.
-Physical signal priority and hardware remain future work. Independent review remains
-required; the PR is intentionally left unmerged.
+Physical signal priority and hardware remain future work. PR #7 was subsequently merged on 2026-10-07 as
+`37ea15bf19d762883769c6964a807455131aae17`. The independent review found an
+evidence-write exception-safety defect; see [the focused hotfix](EXCEPTION_SAFETY_HOTFIX.md).

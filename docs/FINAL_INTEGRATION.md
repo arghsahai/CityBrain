@@ -81,3 +81,22 @@ The verifier checks saved JSON, execution-before-acceptance ordering, exact phys
 ## Limits
 
 One emergency, configured candidate bounds and static hospital availability remain explicit limits. Lane topology/permissions are cached for the duration of a run; runtime lane-permission changes require invalidating/rebuilding that cache. Road blockage and measured costs remain live. The topology search is not a calibrated citywide traffic assignment model. Full evidence is retained in memory as well as on disk, so very long runs need a streaming retention policy. Signal actuation, hardware, real sensing and real-city validation remain future work.
+
+## Evidence failure safety (post-PR #7 hotfix)
+
+Evidence serialization and writer exceptions are non-fatal at the observability boundary.
+Verified physical execution still completes logical acceptance. Terminal cleanup clears
+plans, registered routes, policy timers and reservations before terminal reporting.
+Accepted history and the immutable terminal outcome survive failed event/summary writes.
+
+`runtime.evidence_failures` retains event type, time, exception type/message/errno,
+associated plan, physical execution status, acceptance completion and cleanup completion.
+Completion fields are updated after acceptance/finalization without reusing the writer.
+Summaries include this diagnostic list. If the directory is unavailable, the runtime keeps
+in-memory evidence; explicit protected paths and existing output directories remain errors.
+Failed disk writes are not retried or silently claimed as durable. Persistent failures can
+leave disk evidence incomplete, and in-memory diagnostics are lost if the process exits.
+
+Smoke commands now exit non-zero for unexpected outcomes, incomplete cleanup/evidence,
+or a catalogue S08 run that does not exercise P2. Saved-evidence checks use explicit errors,
+including under optimized Python. Historical archive portability limits remain unchanged.
