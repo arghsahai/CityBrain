@@ -24,16 +24,25 @@ def main():
         from citybrain.integration.state_adapter import CANDIDATE_ROUTES
         routes = CANDIDATE_ROUTES
     results = []
+    failures = []
     for scenario in args.scenarios:
         config = prepare_config(args.output/scenario/'inputs', scenario, 'normal')
         runtime = run(config, output=args.output/scenario/'runtime', seed=args.seed, routes=routes,
             config=RuntimeConfig(topology_fallback=args.candidate_source == 'legacy-catalog'))
-        assert runtime.active_plan is None and runtime.replanner.active_plan is None
-        assert not runtime.core._active_routes and not runtime.core.reserved_ambulances
-        row = {'finalized': True, 'scenario': scenario, 'seed': args.seed, 'candidate_source': args.candidate_source, **runtime.summary()}
+        finalized = (runtime.active_plan is None and runtime.replanner.active_plan is None and
+                     not runtime.core._active_routes and not runtime.core.reserved_ambulances)
+        row = {'finalized': finalized, 'scenario': scenario, 'seed': args.seed, 'candidate_source': args.candidate_source, **runtime.summary()}
         results.append(row)
+        expected = 'NO_ROUTE' if scenario == 'S06' else 'SUCCESS'
+        if row['terminal_outcome'] != expected or not finalized or row['evidence_failures']:
+            failures.append(f"{scenario}: expected {expected} with finalized state and complete evidence")
+        if scenario == 'S08' and args.candidate_source == 'legacy-catalog':
+            if len(row['accepted_plans']) < 3:
+                failures.append('S08: repeated-replan smoke did not exercise P2')
         print('SMOKE', scenario, row['terminal_outcome'], 'replans', row['route_changes'], flush=True)
     (args.output/'smokes.json').write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')
+    if failures:
+        raise SystemExit('; '.join(failures))
 
 
 if __name__ == '__main__':

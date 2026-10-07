@@ -86,7 +86,16 @@ class CityBrainRuntime:
         self._deferred = False
         self._last_context = {}
         self.provenance = {}
-        self.writer = EvidenceWriter(output) if output is not None else None
+        self.evidence_failures = []
+        self.writer = None
+        if output is not None:
+            try:
+                self.writer = EvidenceWriter(output)
+            except FileExistsError:
+                # Preserve the explicit fresh-directory/no-overwrite contract.
+                raise
+            except OSError as error:
+                self._evidence_failure('WRITER_INIT', error)
         self._record_evidence('RUNTIME_CONFIG', configuration=self.config,
                               hospitals=self.hospitals, candidate_source='topology' if routes is None else 'explicit')
 
@@ -192,6 +201,7 @@ class CityBrainRuntime:
             self.dispatch_time = self.now
             self.core.reserved_ambulances.add(self.ambulance_id)
             self.plan_history.append(deepcopy(self.active_plan))
+            self._update_evidence_failures()
             self._record_evidence('PLAN_ACCEPTED', accepted_plan=self.active_plan,
                                   execution=execution, accepted_revision=0)
             self._record_advisories()
@@ -259,6 +269,7 @@ class CityBrainRuntime:
         # Only a verified physical action may advance the planner lifecycle.
         self.active_plan = self.replanner.accept(result, accepted_time=self.now)
         self.plan_history.append(deepcopy(self.active_plan))
+        self._update_evidence_failures()
         self.applied_replans += 1
         latency = self.now - (self._pending_since if self._pending_since is not None else self.now)
         self.replan_latencies.append(latency)
@@ -336,15 +347,21 @@ class CityBrainRuntime:
         self.terminal_outcome, self.terminal_reason = outcome, reason
         if outcome == 'SUCCESS':
             self.arrival_time = self.now
-        self._record_evidence('TERMINAL', terminal_outcome=outcome, reason=reason,
-                              last_accepted_plan=self.active_plan, metrics=self.summary())
+        last_accepted_plan = self.active_plan
         if self.ambulance_id:
             self.core.clear_active_route(self.ambulance_id)
             self.core.reserved_ambulances.discard(self.ambulance_id)
         self.active_plan = self.replanner.active_plan = None
         self.replanner.active_since = self.replanner.last_replan_time = None
+        self._update_evidence_failures()
+        # Mandatory cleanup above cannot depend on snapshotting or disk writes.
+        self._record_evidence('TERMINAL', terminal_outcome=outcome, reason=reason,
+                              last_accepted_plan=last_accepted_plan)
         if self.writer:
-            self.writer.summary(self.summary())
+            try:
+                self.writer.summary(self.summary())
+            except Exception as error:
+                self._evidence_failure('SUMMARY', error)
 
     def summary(self):
         return snapshot(dict(emergency_id=getattr(self.emergency, 'emergency_id', None),
@@ -353,16 +370,50 @@ class CityBrainRuntime:
             simulation_time=self.now, dispatch_time=self.dispatch_time, arrival_time=self.arrival_time,
             travel_time=self.arrival_time-self.dispatch_time if self.arrival_time is not None and self.dispatch_time is not None else None,
             route_changes=self.applied_replans, replanning_latencies=self.replan_latencies,
-            accepted_plans=self.plan_history, configuration=self.config, provenance=self.provenance))
+            accepted_plans=self.plan_history, configuration=self.config, provenance=self.provenance,
+            evidence_failures=self.evidence_failures))
+
+    def _update_evidence_failures(self):
+        accepted_ids = {plan.plan_id for plan in self.plan_history}
+        cleaned = (self.terminal_outcome is not None and self.active_plan is None and
+                   self.replanner.active_plan is None and
+                   self.ambulance_id not in self.core.reserved_ambulances and
+                   self.core.get_active_route(self.ambulance_id) is None)
+        for failure in self.evidence_failures:
+            failure['logical_acceptance_completed'] = failure['plan_id'] in accepted_ids
+            failure['cleanup_completed'] = cleaned
+
+    def _evidence_failure(self, action, error, execution=None):
+        # Deliberately independent of snapshot(), the writer and logging handlers.
+        # Completion fields are refreshed after acceptance and terminal cleanup.
+        last_plan = self.active_plan or (self.plan_history[-1] if self.plan_history else None)
+        failure = dict(event_type=action, failure_type=type(error).__name__,
+            errno=getattr(error, 'errno', None), message=str(error), simulation_time=self.now,
+            plan_id=getattr(execution, 'plan_id', None) or getattr(last_plan, 'plan_id', None),
+            physical_execution_attempted=(bool(self.plan_history) if execution is None else
+                execution.verification not in {'PREFLIGHT_FAILED', 'DEFERRED'}),
+            physical_execution_verified=(bool(self.plan_history) if execution is None else execution.success),
+            logical_acceptance_completed=False, cleanup_completed=False)
+        self.evidence_failures.append(failure)
+        self._update_evidence_failures()
+        return {'success': False, 'failure': failure}
 
     def _record_evidence(self, action, **kwargs):
-        evidence = snapshot(dict(action=action, simulation_time=self.now,
-            emergency_id=getattr(self.emergency, 'emergency_id', None),
-            ambulance_id=self.ambulance_id, hospital_id=(self.hospital or {}).get('id'),
-            active_plan=self.active_plan, context=self._last_context, **kwargs))
-        self.runtime_evidence.append(evidence)
-        if self.writer:
-            self.writer.append(evidence)
+        # This narrow observability boundary catches serializer/writer failures,
+        # never exceptions from planning, execution, reconciliation or cleanup.
+        try:
+            if action == 'TERMINAL':
+                kwargs['metrics'] = self.summary()
+            evidence = snapshot(dict(action=action, simulation_time=self.now,
+                emergency_id=getattr(self.emergency, 'emergency_id', None),
+                ambulance_id=self.ambulance_id, hospital_id=(self.hospital or {}).get('id'),
+                active_plan=self.active_plan, context=self._last_context, **kwargs))
+            self.runtime_evidence.append(evidence)
+            if self.writer:
+                self.writer.append(evidence)
+            return {'success': True, 'persisted': self.writer is not None}
+        except Exception as error:
+            return self._evidence_failure(action, error, kwargs.get('execution'))
 
 
 def run(config_path=None, max_steps=900, *, routes=None, hospitals=None, output=None, seed=1, config=None):
