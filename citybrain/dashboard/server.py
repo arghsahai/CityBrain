@@ -18,9 +18,12 @@ def reduce_events(events):
                  vehicle={}, roads={}, plan=None, previous_plan=None, decision={},
                  accepted_time=None, decision_time=None, observation_time=None,
                  initial_agents={}, execution={}, terminal=None, timeline=[], plans=[],
-                 diagnostics=[], config={}, provenance={})
+                 diagnostics=[], config={}, provenance={}, demo=None, demo_config=None)
     for event in events:
         action = event.get('action')
+        if action == 'DEMO_CONFIG': state['demo_config'] = event.get('demo_config')
+        if action == 'DEMO_SNAPSHOT':
+            state['demo'] = dict(observed_time=event.get('simulation_time'), **event['demo'])
         state['time'] = event.get('simulation_time')
         for field in ('emergency', 'ambulance', 'hospital'):
             if event.get(field+'_id') is not None:

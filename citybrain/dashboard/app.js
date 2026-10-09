@@ -6,6 +6,7 @@ function facts(id,items){el(id).replaceChildren(...items.map(([name,value])=>{co
 function table(id,headers,rows){const t=document.createElement('table'),head=document.createElement('tr');headers.forEach(h=>{const th=document.createElement('th');th.textContent=h;head.append(th);});t.append(head);rows.forEach(row=>{const tr=document.createElement('tr');if(row.blocked)tr.className='blocked';row.values.forEach(v=>{const td=document.createElement('td');td.textContent=fmt(v);tr.append(td);});t.append(tr);});el(id).replaceChildren(t);}
 let isReplay=false, playing=false, busy=false;
 function render(s){
+ renderDemo(s);
  isReplay=s.mode.startsWith('REPLAY');el('replay').hidden=!isReplay;el('cursor').max=s.max_time;
  text('mode',s.mode);text('clock',`${fmt(s.time)} s`);text('scenario',`SCENARIO ${s.scenario} (display label)`);
  const terminal=s.terminal, plan=s.plan||{}, d=s.decision||{}, v=s.vehicle||{};
@@ -32,3 +33,21 @@ async function update(){if(busy)return;busy=true;try{const query=isReplay?`?at=$
 el('cursor').addEventListener('input',()=>{playing=false;text('play','Play recorded events');update();});
 el('play').addEventListener('click',()=>{playing=!playing;text('play',playing?'Pause replay':'Play recorded events');});
 setInterval(()=>{if(isReplay&&playing){el('cursor').value=Math.min(Number(el('cursor').max),Number(el('cursor').value)+1);if(el('cursor').value===el('cursor').max){playing=false;text('play','Play recorded events');}}update();},500);update();
+
+function renderDemo(s){
+ el('demoPanel').hidden=!s.demo_config;
+ if(!s.demo_config)return;
+ text('demoLabel',s.demo_config.label+' · '+s.demo_config.seconds_per_step+' wall seconds / simulation second from 280 s');
+ const d=s.demo;if(!d)return;
+ text('demoObservation',`Plan ${s.plan?'P'+s.plan.revision:'awaiting dispatch'} · Ambulance ${d.vehicles.find(v=>v.type==='ambulance')?.speed?.toFixed(1)??'not present'} m/s · H1 ICU: simulated available · Observed at ${d.observed_time} simulation seconds · ${d.vehicles.length} vehicles · snapshot age ${Math.max(0,s.time-d.observed_time)} simulation seconds`);
+ table('signals',['Signal','Actual phase','SUMO link states','Next switch (sim s)'],d.signals.map(t=>({values:[t.id,t.phase,t.state,t.next_switch]})));
+ const canvas=el('demoMap'),c=canvas.getContext('2d');c.clearRect(0,0,900,420);
+ const [minX,minY,maxX,maxY]=s.demo_config.bounds,spanX=maxX-minX||1,spanY=maxY-minY||1;
+ const xy=p=>[40+(p[0]-minX)/spanX*800,380-(p[1]-minY)/spanY*340];
+ c.strokeStyle='#475569';c.lineWidth=4;
+ for(const road of s.demo_config.roads){c.beginPath();road.split(' ').forEach((p,i)=>{const [x,y]=xy(p.split(',').map(Number));i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();}
+ c.font='14px sans-serif';
+ for(const t of d.signals){const [x,y]=xy(t.position);c.fillStyle='#cbd5e1';c.fillText(t.id,x+12,y-12);const colors=[['r','#ef4444'],['y','#facc15'],['g','#22c55e']];colors.forEach(([letter,color],i)=>{c.beginPath();c.arc(x+(i-1)*10,y,4,0,Math.PI*2);c.fillStyle=t.state.toLowerCase().includes(letter)?color:'#334155';c.fill();});}
+ const [hx,hy]=xy(d.hospital_position);c.fillStyle='#22c55e';c.fillRect(hx-10,hy-28,20,14);c.fillText('H1 (synthetic)',hx-90,hy-34);
+ for(const v of d.vehicles){const [x,y]=xy(v.position),ambulance=v.type==='ambulance';c.beginPath();c.arc(x,y,ambulance?8:3,0,Math.PI*2);c.fillStyle=ambulance?'#ff5050':'#60a5fa';c.fill();if(ambulance){c.fillStyle='#fff';c.fillText('AMBULANCE',x+12,y+18);}}
+}
