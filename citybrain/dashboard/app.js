@@ -39,7 +39,8 @@ function renderDemo(s){
  if(!s.demo_config)return;
  text('demoLabel',s.demo_config.label+' · '+s.demo_config.seconds_per_step+' wall seconds / simulation second from 280 s');
  const d=s.demo;if(!d)return;
- text('demoObservation',`Plan ${s.plan?'P'+s.plan.revision:'awaiting dispatch'} · Ambulance ${d.vehicles.find(v=>v.type==='ambulance')?.speed?.toFixed(1)??'not present'} m/s · H1 ICU: simulated available · Observed at ${d.observed_time} simulation seconds · ${d.vehicles.length} vehicles · snapshot age ${Math.max(0,s.time-d.observed_time)} simulation seconds`);
+ const ambulance=d.vehicles.find(v=>v.type==='ambulance');
+ text('demoObservation',`Plan ${s.plan?'P'+s.plan.revision:'awaiting dispatch'} · Ambulance ${ambulance?ambulance.speed.toFixed(1)+' m/s':'not present (arrived or not yet departed)'} · H1 ICU: simulated available · Observed at ${d.observed_time} simulation seconds · ${d.vehicles.length} vehicles · snapshot age ${Math.max(0,s.time-d.observed_time)} simulation seconds`);
  table('signals',['Signal','Actual phase','SUMO link states','Next switch (sim s)'],d.signals.map(t=>({values:[t.id,t.phase,t.state,t.next_switch]})));
  const canvas=el('demoMap'),c=canvas.getContext('2d');c.clearRect(0,0,900,420);
  const [minX,minY,maxX,maxY]=s.demo_config.bounds,spanX=maxX-minX||1,spanY=maxY-minY||1;
