@@ -60,7 +60,12 @@ def test_server_get_only_no_arbitrary_files(tmp_path):
         with urllib.request.urlopen(base+'/api/state') as response:
             data=json.load(response);assert data['read_error'] and data['traci_status'].startswith('UNKNOWN')
         with urllib.request.urlopen(base+'/') as response: assert b'LIVE CONTROL CENTER' in response.read()
-        for request in [urllib.request.Request(base+'/api/state',data=b'command=reroute'),base+'/../../citybrain/main.py']:
+        for asset in ['/3d','/scene.js','/scene.css','/vendor/three.module.js','/vendor/three.core.js','/vendor/OrbitControls.js']:
+            with urllib.request.urlopen(base+asset) as response:
+                assert response.status == 200
+                assert response.read()
+                assert "script-src 'self'" in response.headers['Content-Security-Policy']
+        for request in [base+'/vendor/../../main.py',urllib.request.Request(base+'/api/state',data=b'command=reroute'),base+'/../../citybrain/main.py']:
             with pytest.raises(urllib.error.HTTPError):urllib.request.urlopen(request)
         assert not p.exists()
     finally:server.shutdown();server.server_close();thread.join()

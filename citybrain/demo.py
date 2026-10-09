@@ -20,7 +20,7 @@ def observe(connection, runtime):
     """Read actual SUMO state using the already connected client."""
     vehicles = [dict(id=v, type=connection.vehicle.getTypeID(v),
         position=connection.vehicle.getPosition(v), edge=connection.vehicle.getRoadID(v),
-        speed=connection.vehicle.getSpeed(v)) for v in connection.vehicle.getIDList()]
+        speed=connection.vehicle.getSpeed(v), angle=connection.vehicle.getAngle(v)) for v in connection.vehicle.getIDList()]
     signals = [dict(id=s, phase=connection.trafficlight.getPhase(s),
         state=connection.trafficlight.getRedYellowGreenState(s),
         next_switch=connection.trafficlight.getNextSwitch(s),
@@ -76,6 +76,7 @@ def main():
         paced_from=280, hospital_availability='Synthetic configuration, not real hospital data',
         signals='Observed SUMO programs; CityBrain does not control signals'))
     metadata['demo_config']['roads'] = [lane.get('shape') for edge in net.findall('edge') if not edge.get('function') for lane in edge.findall('lane')]
+    metadata['demo_config']['road_edges'] = {edge.get('id'): [lane.get('shape') for lane in edge.findall('lane')] for edge in net.findall('edge') if not edge.get('function')}
     metadata['demo_config']['bounds'] = [float(x) for x in net.find('location').get('convBoundary').split(',')]
     runtime.provenance = dict(git_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(), demo=True, seed=1, inputs_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in config.parent.iterdir() if p.is_file()})
     runtime._record_evidence('RUN_PROVENANCE', provenance=runtime.provenance)

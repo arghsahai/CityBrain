@@ -139,7 +139,12 @@ def make_server(path, port=8765, replay=False, scenario='Unspecified'):
                     self.send_error(400, str(error)); return
                 self.respond(payload, 'application/json'); return
             assets = {'/': ('index.html', 'text/html'), '/app.js': ('app.js', 'text/javascript'),
-                      '/style.css': ('style.css', 'text/css')}
+                      '/style.css': ('style.css', 'text/css'),
+                      '/3d': ('scene.html', 'text/html'),
+                      '/scene.css': ('scene.css', 'text/css'),
+                      '/scene.js': ('scene.js', 'text/javascript'),
+                      **{'/vendor/'+name: ('vendor/'+name, 'text/javascript')
+                         for name in ('three.module.js', 'three.core.js', 'OrbitControls.js')}}
             if url.path not in assets:
                 self.send_error(404); return
             filename, content_type = assets[url.path]
