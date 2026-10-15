@@ -1,5 +1,7 @@
 # CityBrain SUMO experiments
 
+**Team setup, latest live 3D demo and ready-to-play saved demo:** [Team quick start](docs/krishna/TEAM_QUICKSTART.md).
+
 Current scope: **software + SUMO digital twin only**. The research PDF is architectural and research context, not the current implementation specification. Hardware-in-loop, real cameras, ESP32, edge devices, GPS, physical signals, real drones and live traffic feeds are future work.
 
 Krishna owns `simulation/` and `experiments/`. The experiment runner uses a TraCI dictionary adapter and main’s unchanged EmergencyPlanner and Replanner. Argh’s core integration remains a separate dependency. It does not replace teammate agents or routing architecture. This integration branch starts from team main; the independently rooted Krishna branch remains a historical reference. See docs/INTEGRATION.md for the port decisions.
