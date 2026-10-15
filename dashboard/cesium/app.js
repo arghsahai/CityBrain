@@ -164,7 +164,7 @@ function renderPanel(state) {
   const frame=state.chennai, plan=state.plan, ambulance=frame?.vehicles.find(v=>v.id===frame.ambulance_id);
   const hospital=frame?.hospitals.find(h=>h.id===state.hospital);
   show('status',state.terminal?.outcome || (frame?'RUNNING':'WAITING FOR TELEMETRY'));
-  show('mode',state.playback+' · READ ONLY');
+  show('mode',state.playback+' · '+(state.provenance.profile || 'UNKNOWN PROFILE')+' · READ ONLY');
   show('time',num(frame?.simulation_time ?? state.time,0)+' s');
   show('count',frame?.vehicles.length);show('replans',state.plans.length);
   show('queues',frame?Object.values(frame.roads).reduce((a,r)=>a+r.queue,0):null);
@@ -174,6 +174,8 @@ function renderPanel(state) {
     ['Location',ambulance?`${num(ambulance.latitude,5)}, ${num(ambulance.longitude,5)}`:'UNAVAILABLE'],
     ['Current road',ambulance?.road],['Hospital',hospital?.name || state.hospital],
     ['Plan ETA',plan?num(plan.eta)+' s · estimate at acceptance':'UNAVAILABLE'],
+    ['Response time',state.terminal?.metrics.travel_time != null?num(state.terminal.metrics.travel_time)+' simulation s':'UNAVAILABLE'],
+    ['Arrival',state.terminal?.metrics.arrival_time != null?num(state.terminal.metrics.arrival_time)+' simulation s':'UNAVAILABLE'],
     ['Observation',frame?num(frame.simulation_time,0)+' s · SUMO_SIMULATED':'UNAVAILABLE']];
   $('ambulance').replaceChildren(...kv.flatMap(pair=>pair.map(text=>{const span=document.createElement('span');span.textContent=text??'UNAVAILABLE';return span;})));
   $('plan-history').replaceChildren(...state.plans.map(p=>{const el=document.createElement('span');el.textContent=`P${p.plan.revision} · ${p.time}s`;return el;}));

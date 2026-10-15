@@ -48,6 +48,8 @@ campus around the requested reference 12.8408 N, 80.1540 E. The import envelope 
 extend beyond that envelope. The simulation retains primary/tertiary corridors,
 hospital access, legal alternatives and connecting feeder roads: **795 edges**.
 It intentionally omits most residential cul-de-sacs, not roads invented for a demo.
+The resulting complete edge shapes span 80.13067–80.17485 E and
+12.81874–12.86433 N (approximately 4.8 × 5.1 km).
 
 The road journey is longer than the area's straight-line span: the 12 catalogue
 paths are approximately 7.45–8.79 km because divided roads, legal turns and access

@@ -43,6 +43,7 @@ def main():
         page.locator('#seek').dispatch_event('input')
         expect(page.locator('#outcome')).to_contain_text('SUCCESS',timeout=30000)
         page.set_viewport_size({'width':800,'height':1000})
+        page.wait_for_timeout(1200)
         page.screenshot(path=str(args.output/'tablet.png'))
         assert not errors,errors
         result=dict(errors=errors,status=page.locator('#outcome').inner_text(),

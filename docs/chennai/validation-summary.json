@@ -1,0 +1,97 @@
+{
+  "pytest": {
+    "passed": 278,
+    "seconds": 13.8,
+    "command": "venv/bin/python -m pytest -q"
+  },
+  "final_paced": {
+    "implementation_commit": "120427009f5c198574eb3793e8926020070d6d2b",
+    "working_tree_dirty_at_start": false,
+    "terminal_outcome": "SUCCESS",
+    "simulation_time": 759.0,
+    "dispatch_time": 51.0,
+    "travel_time": 708.0,
+    "route_changes": 8,
+    "wall_clock_seconds": 255.39332266699967,
+    "telemetry_failures": 0,
+    "dashboard_write_failures": 0,
+    "evidence_failures": [],
+    "replay_map_matched_frames": 759,
+    "gps_replay_frames": 121
+  },
+  "browser": {
+    "errors": [],
+    "status": "SUCCESS \u00b7 verified_hospital_arrival",
+    "checks": [
+      "Cesium WebGL scene",
+      "moving observed ambulance",
+      "visible vehicles and both signals",
+      "accepted route geometry",
+      "SVG fallback",
+      "replay time filtering",
+      "terminal SUCCESS",
+      "800px layout"
+    ],
+    "browser": "155.0.8059.40"
+  },
+  "live_browser": {
+    "errors": [],
+    "first_simulation_time": 98.0,
+    "last_simulation_time": 109.0,
+    "source": "REPLAY",
+    "explicit_map_match": true,
+    "live_sumo_observation": true,
+    "browser_closed_while_runtime_active": true
+  },
+  "legacy_scripts": [
+    {
+      "file": "test_ambulance_agent.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_emergency_planner.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_hospital_agent.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_models.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_plan_validator.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_police_agent.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_replanner.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_route_scorer.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_signal_agent.py",
+      "exit_code": 0
+    },
+    {
+      "file": "test_traffic_agent.py",
+      "exit_code": 0
+    }
+  ],
+  "historical": "See validation-final-paced.json: frozen 2172-entry manifest check",
+  "official_trials_regenerated": false,
+  "paid_requests_made": false,
+  "limitations": [
+    "Live provider HTTP adapters not implemented; no credentials or coverage test.",
+    "Signals, demand, roadworks, availability and GPS fixture are synthetic.",
+    "No actual vehicle tracking or real signal control.",
+    "HEAVY/PEAK startup checked; full completion unverified."
+  ]
+}
