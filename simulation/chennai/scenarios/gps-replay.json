@@ -1,0 +1,13 @@
+[
+  {
+    "vehicle_id": "synthetic_gps_demo",
+    "longitude": 80.17091077021257,
+    "latitude": 12.831367571365375,
+    "timestamp": "2026-10-16T00:01:00+00:00",
+    "speed_mps": 5,
+    "accuracy_m": 8,
+    "consent": true,
+    "session_active": true,
+    "source": "GPS_REPLAY"
+  }
+]

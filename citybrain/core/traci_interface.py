@@ -118,6 +118,49 @@ class TraCIInterface:
             ),
         }
 
+    def geographic_observations(self) -> dict:
+        """Read-only geographical observations on Core's existing connection.
+
+        Callers isolate failures at their telemetry boundary. No subscriptions,
+        simulation steps, vehicle writes, or additional TraCI clients are used.
+        """
+        timestamp = self.simulation_time()
+        vehicles = []
+        for vehicle_id in self.vehicle_ids():
+            state = self.vehicle_state(vehicle_id)
+            lon, lat = self.traci.simulation.convertGeo(*state['position'])
+            vehicles.append(dict(id=vehicle_id, category=state['vehicle_type'],
+                longitude=lon, latitude=lat, speed=state['speed'],
+                heading=self.traci.vehicle.getAngle(vehicle_id), road=state['edge_id'],
+                simulation_time=timestamp, source='SUMO_SIMULATED'))
+        signals = []
+        for signal_id in self.signal_ids():
+            # Joined junction IDs need not be available through junction.getPosition.
+            lanes = self.traci.trafficlight.getControlledLanes(signal_id)
+            points = [self.traci.lane.getShape(lane)[-1] for lane in set(lanes)]
+            if not points:
+                continue
+            point = (sum(p[0] for p in points)/len(points), sum(p[1] for p in points)/len(points))
+            lon, lat = self.traci.simulation.convertGeo(*point)
+            signals.append(dict(**self.signal_state(signal_id), longitude=lon, latitude=lat,
+                                simulation_time=timestamp, source='SUMO_SIMULATED'))
+        return dict(vehicles=vehicles, signals=signals, simulation_time=timestamp, source='SUMO_SIMULATED')
+
+    def set_simulated_edge_speed(self, edge_id: str, speed: float) -> list:
+        """Explicit pilot scenario action, unrelated to advisory signal control."""
+        if speed <= 0:
+            raise ValueError('speed must be positive')
+        previous = []
+        for i in range(self.traci.edge.getLaneNumber(edge_id)):
+            lane = f'{edge_id}_{i}'
+            previous.append(self.traci.lane.getMaxSpeed(lane))
+            self.traci.lane.setMaxSpeed(lane, speed)
+        return previous
+
+    def restore_simulated_edge_speed(self, edge_id: str, speeds: list) -> None:
+        for i, speed in enumerate(speeds):
+            self.traci.lane.setMaxSpeed(f'{edge_id}_{i}', speed)
+
     def request_signal_priority(
         self,
         signal_id: str,

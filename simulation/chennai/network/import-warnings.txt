@@ -1,0 +1,58 @@
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+Warning: Ambiguity in turnarounds computation at junction '11865426844'.
+Warning: Ambiguity in turnarounds computation at junction '7732826921'.
+Warning: Ambiguity in turnarounds computation at junction 'cluster_7782956256_7782956274'.
+Warning: Found angle of 121.62 degrees at edge '-1190751763', segment 0.
+Warning: Found sharp turn with radius 8.07 at the end of edge '-1202517252#5'.
+Warning: Found sharp turn with radius 5.82 at the start of edge '-719309785#0'.
+Warning: Found sharp turn with radius 4.64 at the end of edge '-723115234'.
+Warning: Found angle of 99.79 degrees at edge '-766145631#1', segment 1.
+Warning: Found angle of 111.73 degrees at edge '-767828200#0', segment 1.
+Warning: Found angle of 175.93 degrees at edge '-833746066#0', segment 3.
+Warning: Found sharp turn with radius 4.98 at the end of edge '-833746066#0'.
+Warning: Found sharp turn with radius 6.50 at the start of edge '-833753814#1'.
+Warning: Found angle of 111.73 degrees at edge '1190554812#1', segment 0.
+Warning: Lane '184108779#5_0' is not connected from any incoming edge at junction 'cluster_3881541540_6307308201'.
+Warning: Lane '839282059#3_1' is not connected from any incoming edge at junction 'cluster_3881611402_7831925162'.
+Warning: Minor green from edge '30424374#15' to edge '828342699' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Minor green from edge '30424374#18' to edge '1432762714#9' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Minor green from edge '-30424374#20' to edge '24160185#19' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Speed of straight connection '30424374#0_0->30424374#1_0' reduced by 8.20 due to turning radius of 35.75 (length=15.00, angle=39.59).
+Warning: Speed of straight connection '-30424374#4_0->-30424374#0_0' reduced by 8.24 due to turning radius of 35.53 (length=14.91, angle=39.59).
+Warning: Speed of straight connection '422434618#13_0->1274409814_0' reduced by 12.04 due to turning radius of 18.85 (length=2.96, angle=24.39).
+Warning: Speed of straight connection '1274409815_0->-422434618#13_0' reduced by 13.31 due to turning radius of 14.44 (length=3.14, angle=28.20).
+Warning: Speed of straight connection '-719309785#1_0->-719309785#0_0' reduced by 5.40 due to turning radius of 13.10 (length=14.42, angle=82.17).
+Warning: Intersecting left turns at junction 'cluster_11148069199_11148069236' from lane '1202517224#0_0' and lane '-1202517224#2_0' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_11235451613_3881611235' from lane '384806319#5_0' and lane '-384806319#7_0' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_3876904896_3876904912' from lane '384388321#1_0' and lane '-384388311_0' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_3876905079_3876905095' from lane '833753782_0' and lane '384388304#6_0' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_3876920974_3876920981' from lane '384392151#1_0' and lane '-384392150_0' (increase junction radius to avoid this).
+Warning: Minor green from edge '30424374#18' to edge '1432762714#9' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Minor green from edge '-30424374#20' to edge '24160185#19' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: 8 total messages of type: Found angle of % degrees at edge '%', segment %.
+Warning: 12 total messages of type: Found sharp turn with radius % at the % of edge '%'.
+Warning: 17 total messages of type: Intersecting left turns at junction '%' from lane '%' and lane '%' (increase junction radius to avoid this).
+Warning: 6 total messages of type: Minor green from edge '%' to edge '%' exceeds %m/s. Maybe a left-turn lane is missing.
+Warning: 14 total messages of type: Speed of % connection '%' reduced by % due to turning radius of % (length=%, angle=%).
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+pj_obj_create: Cannot find proj.db
+Warning: Ambiguity in turnarounds computation at junction '7732826921'.
+Warning: Found sharp turn with radius 6.16 at the end of edge '24160185#35'.
+Warning: Minor green from edge '30424374#15' to edge '828342699' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Minor green from edge '30424374#18' to edge '1432762714#9' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Minor green from edge '-30424374#20' to edge '24160185#19' exceeds 19.44m/s. Maybe a left-turn lane is missing.
+Warning: Speed of straight connection '30424374#0_0->30424374#1_0' reduced by 8.20 due to turning radius of 35.75 (length=15.00, angle=39.59).
+Warning: Speed of straight connection '-30424374#4_0->-30424374#0_0' reduced by 8.24 due to turning radius of 35.53 (length=14.91, angle=39.59).
+Warning: Speed of straight connection '422434618#13_0->1274409814_0' reduced by 12.04 due to turning radius of 18.85 (length=2.96, angle=24.39).
+Warning: Speed of straight connection '1274409815_0->-422434618#13_0' reduced by 13.31 due to turning radius of 14.44 (length=3.14, angle=28.20).
+Warning: Speed of straight connection '-30424374#22_0->-30424374#20_0' reduced by 12.11 due to turning radius of 18.58 (length=6.39, angle=35.57).
+Warning: Intersecting left turns at junction 'cluster_3877295202_3877540667' from lane '1432762717#2_0' and lane '-1432762717#5_0' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_7103813430_7103813431_7783046717' from lane '833768863_0' and lane '24160185#41_1' (increase junction radius to avoid this).
+Warning: Intersecting left turns at junction 'cluster_7781021982_7781104543' from lane '422434618#11_0' and lane '-422434618#13_0' (increase junction radius to avoid this).
+Warning: Unused state in tlLogic '7732945699', program '0' at tl-index 2
+Warning: 8 total messages of type: Speed of % connection '%' reduced by % due to turning radius of % (length=%, angle=%).
