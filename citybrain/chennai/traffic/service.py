@@ -102,7 +102,7 @@ class TrafficService:
                     key = observation.stream_key
                     old = self._cache.get(key)
                     if old is not None:
-                        if observation.observation_id == old.observation_id:
+                        if replace(old,retrieved_at=observation.retrieved_at) == observation:
                             self.duplicates += 1
                             self._cache[key] = replace(old,retrieved_at=observation.retrieved_at)
                             continue

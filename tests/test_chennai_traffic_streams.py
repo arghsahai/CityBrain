@@ -84,3 +84,24 @@ def test_tomtom_unknown_time_flow_reopening_replaces_closure():
     assert len(rows) == 1 and rows[0]['incident_type'] is None
     assert rows[0]['freshness_status'] == 'UNKNOWN'
     assert rows[0]['matching_status'] == 'INSUFFICIENT_DATA'
+
+
+def test_reused_record_id_cannot_hide_new_state_or_bypass_ordering():
+    clock = [NOW]
+    row = observation(incident_type='ROAD_CLOSURE')
+    provider = Provider(FetchResult([row],'FETCHED'))
+    service = TrafficService(provider,matcher(),clock=lambda:clock[0])
+    service.poll_once()
+    clock[0] += timedelta(seconds=30)
+    # Even if a recording reuses an ID, a newer actual observation supersedes it.
+    reopened = replace(row,observation_timestamp=clock[0],incident_type=None)
+    provider.result = FetchResult([reopened],'FETCHED')
+    service.poll_once()
+    assert service.snapshot()['observations'][0]['incident_type'] is None
+    provider.result = FetchResult([row],'FETCHED')
+    service.poll_once()
+    assert service.snapshot()['observations'][0]['incident_type'] is None
+    assert service.snapshot()['out_of_order'] == 1
+    provider.result = FetchResult([reopened],'FETCHED')
+    service.poll_once()
+    assert service.snapshot()['duplicates'] == 1
