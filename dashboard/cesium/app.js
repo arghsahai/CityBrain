@@ -38,7 +38,11 @@ function initializeCesium() {
   viewer.selectedEntityChanged.addEventListener(entity=>{
     if(entity)notice(entity.name+' · '+(entity.description?.getValue(viewer.clock.currentTime) || 'OSM geometry'));
   });
-  viewer.scene.renderError.addEventListener((_scene,error)=>{ notice('3D rendering failed: '+error.message); activateFallback(true); });
+  viewer.scene.renderError.addEventListener((_scene,error)=>{
+    viewerFailure=error.message;
+    notice('3D rendering failed: '+error.message);
+    activateFallback(true);
+  });
   viewer.cesiumWidget.creditDisplay.addStaticCredit(new C.Credit('© OpenStreetMap contributors · ODbL 1.0',true));
   for (const [id,road] of Object.entries(geo.roads)) {
     roads.set(id,viewer.entities.add({id:'road:'+id,name:road.name || id,

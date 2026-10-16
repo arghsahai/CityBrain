@@ -39,10 +39,14 @@ def reduce_events(events):
             state['observation_time'] = planner_state.get('simulation_time')
         if action == 'RUNTIME_CONFIG': state['config'] = event.get('configuration', {})
         if action == 'RUN_PROVENANCE': state['provenance'] = event.get('provenance', {})
-        if action in ('INITIAL_DECISION', 'DECISION'):
+        if action in ('INITIAL_DECISION', 'DECISION', 'STABILITY_DECISION'):
             state['decision'] = event.get('planner_result') or {}
             state['decision_time'] = state['time']
             if action == 'INITIAL_DECISION': state['initial_agents'] = state['decision']
+        if action == 'STABILITY_DECISION':
+            state['timeline'].append(dict(time=state['time'], action=state['decision'].get('decision', 'UNKNOWN'),
+                plan_id=(state['decision'].get('proposed_plan') or {}).get('plan_id'),
+                result=state['decision'].get('reason')))
         if action in ('PLAN_ACCEPTED', 'REPLAN_ACCEPTED'):
             state['previous_plan'] = state['plan']
             state['plan'] = event['accepted_plan']

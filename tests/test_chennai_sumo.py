@@ -8,17 +8,20 @@ import traci
 from citybrain.chennai.scenario import prepare
 from citybrain.chennai.telemetry import observe
 from citybrain.main import CityBrainRuntime, RuntimeConfig
+from citybrain.chennai.stability import ChennaiRuntime
 from citybrain.models.emergency import Emergency
 
 
 @pytest.mark.skipif(not shutil.which('sumo'), reason='SUMO executable unavailable')
-def test_chennai_dispatch_then_unreachable_hospital(tmp_path):
+@pytest.mark.parametrize('runtime_class',[CityBrainRuntime,ChennaiRuntime])
+@pytest.mark.parametrize('closure',['destination','divertible_edge'])
+def test_chennai_dispatch_then_road_closure(tmp_path,runtime_class,closure):
     cfg, metadata = prepare(tmp_path/'inputs')
     label='chennai-pytest'
     traci.start([sumolib.checkBinary('sumo'),'-c',str(cfg),'--no-step-log','true',
                  '--end','150','--xml-validation','never'],label=label)
     connection=traci.getConnection(label)
-    runtime=CityBrainRuntime(connection,metadata['routes'],[metadata['hospital']],
+    runtime=runtime_class(connection,metadata['routes'],[metadata['hospital']],
         config=RuntimeConfig(horizon=150),output=tmp_path/'runtime')
     signal_states={}
     observations=[]
@@ -41,12 +44,35 @@ def test_chennai_dispatch_then_unreachable_hospital(tmp_path):
         assert any(len(frame['vehicles'])>10 for frame in observations)
         assert all(len(states)>1 for states in signal_states.values())
         ambulance_id=runtime.ambulance_id
-        runtime.step(blocked_edges=[metadata['hospital']['destination_edge']])
-        assert runtime.terminal_outcome=='NO_ROUTE'
-        assert runtime.arrival_time is None
-        assert runtime.active_plan is None
-        assert runtime.core.get_active_route(ambulance_id) is None
-        assert ambulance_id not in runtime.core.reserved_ambulances
+        if closure=='destination':
+            runtime.step(blocked_edges=[metadata['hospital']['destination_edge']])
+            assert runtime.terminal_outcome=='NO_ROUTE'
+            assert runtime.arrival_time is None
+            assert runtime.active_plan is None
+            assert runtime.core.get_active_route(ambulance_id) is None
+            assert ambulance_id not in runtime.core.reserved_ambulances
+        else:
+            position=runtime.core.traci.route_position(ambulance_id)
+            candidates=[p for p in metadata['routes'].values() if position['edge'] in p]
+            target=next(edge for edge in runtime.active_plan.route[2:-1]
+                        if any(edge not in path for path in candidates))
+            # A physical emergency-vehicle restriction and explicit Core closure
+            # flag are scenario input, not inferred from a queued vehicle.
+            for index in range(connection.edge.getLaneNumber(target)):
+                connection.lane.setDisallowed(f'{target}_{index}',['emergency'])
+            for _ in range(10):
+                runtime.step(blocked_edges=[target])
+                if runtime.applied_replans or runtime.terminal_outcome:
+                    break
+            assert runtime.terminal_outcome is None
+            assert runtime.applied_replans==1
+            assert target not in runtime.active_plan.route
+            assert list(connection.vehicle.getRoute(ambulance_id)) == runtime.active_plan.route
+            execution=next(e['execution'] for e in reversed(runtime.runtime_evidence) if e['action']=='ROUTE_EXECUTION')
+            assert execution['verification']=='VERIFIED'
+            if runtime_class is ChennaiRuntime:
+                decision=next(e for e in reversed(runtime.runtime_evidence) if e['action']=='STABILITY_DECISION')
+                assert decision['stability']['outcome']=='HARD_FAILURE_BYPASS'
     finally:
         connection.close()
 

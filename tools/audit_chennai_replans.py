@@ -4,6 +4,7 @@ Repeated suffix returns are a stability-review flag, not proof that each proposa
 had an equal score. This tool does not change simulation or planner behavior.
 """
 import argparse
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -15,6 +16,9 @@ def audit(events, minimum_commitment=10):
     last_decision = None
     returns = []
     overrides = []
+    evaluation_times = []
+    stability_outcomes = Counter()
+    last_trigger = None
     for index, event in enumerate(events):
         action = event['action']
         if action in ('INITIAL_EXECUTION', 'ROUTE_EXECUTION'):
@@ -23,8 +27,15 @@ def audit(events, minimum_commitment=10):
                 assert execution['verification'] == 'VERIFIED'
                 assert execution['intended_suffix'] == execution['observed_suffix']
                 executions[execution['plan_id']] = index, execution
+        if action == 'EVALUATION_TRIGGER':
+            last_trigger = dict(periodic=event.get('periodic'),
+                event_types=sorted({e.get('event_type','UNKNOWN') for e in event.get('events',[])}))
         if action == 'DECISION':
+            evaluation_times.append(event['simulation_time'])
+        if action in ('DECISION','STABILITY_DECISION'):
             last_decision = event
+        if action == 'STABILITY_DECISION':
+            stability_outcomes[event['stability']['outcome']] += 1
         if action not in ('PLAN_ACCEPTED', 'REPLAN_ACCEPTED'):
             continue
         plan = event['accepted_plan']
@@ -48,7 +59,8 @@ def audit(events, minimum_commitment=10):
             earlier = [p['revision'] for p in accepted[:-1]
                        if plan['route'][0] in p['route'] and
                        p['route'][p['route'].index(plan['route'][0]):] == plan['route']]
-            row.update(reason=result['reason'], current_score=result['current_score'],
+            row.update(reason=result['reason'], previous_remaining_route=previous,
+                trigger=last_trigger, current_score=result['current_score'],
                 proposed_score=result['proposed_score'], improvement=result['improvement'],
                 threshold=result['threshold'], elapsed_since_acceptance=row['time']-accepted[-1]['time'],
                 common_prefix_edges=len(common), divergence_after_edge=common[-1] if common else None,
@@ -64,7 +76,11 @@ def audit(events, minimum_commitment=10):
                 overrides.append(override)
         accepted.append(row)
     assert accepted, 'No accepted plans found'
+    gaps = [b-a for a,b in zip(evaluation_times,evaluation_times[1:])]
     return dict(accepted_plans=accepted, physically_verified_route_changes=len(accepted)-1,
+        planner_evaluations=len(evaluation_times), stability_outcomes=dict(stability_outcomes),
+        evaluation_span=[evaluation_times[0],evaluation_times[-1]] if evaluation_times else None,
+        maximum_evaluation_gap_seconds=max(gaps) if gaps else None,
         repeated_future_suffix_returns=returns, invalid_route_overrides=overrides,
         stability_status='OSCILLATION_REVIEW_REQUIRED' if returns else 'NO_REPEATED_FUTURE_SUFFIX_RETURN_OBSERVED',
         limitation='A suffix return proves repeated selection, not equal scores or a counterfactual travel-time loss.')

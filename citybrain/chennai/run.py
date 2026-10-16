@@ -12,25 +12,29 @@ import webbrowser
 
 import sumolib
 import traci
-from citybrain.main import CityBrainRuntime, RuntimeConfig
+from citybrain.main import RuntimeConfig
 from citybrain.models.emergency import Emergency
 from citybrain.chennai.network import ROOT, PILOT, NET, read_network
 from citybrain.chennai.scenario import prepare, Disruptions
 from citybrain.chennai.telemetry import DashboardWriter, emit
 from citybrain.chennai.traffic_providers import ReplayProvider, HEREProvider, TomTomProvider
 from citybrain.chennai.gps import replay as gps_replay
+from citybrain.chennai.stability import ChennaiRuntime, StabilityConfig
 
 
 def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
-        open_browser=True, mode='simulation', seed=17, horizon=1000, keep_open=False):
+        open_browser=True, mode='simulation', seed=17, horizon=1000, keep_open=False,
+        confirmation_seconds=20.0):
     output = Path(output).resolve()
     if output.is_relative_to(ROOT/'experiments/results'):
         raise ValueError('Pilot output cannot modify historical experiments')
     if not math.isfinite(seconds_per_step) or seconds_per_step < 0:
         raise ValueError('Pacing must be finite and nonnegative')
+    stability_config = StabilityConfig(confirmation_seconds)
     output.mkdir(parents=True, exist_ok=False)
     cfg, metadata = prepare(output/'inputs', profile, seed)
-    runtime = CityBrainRuntime(traci, routes=metadata['routes'], hospitals=[metadata['hospital']],
+    runtime = ChennaiRuntime(traci, routes=metadata['routes'], hospitals=[metadata['hospital']],
+        stability_config=stability_config,
         config=RuntimeConfig(horizon=horizon, reevaluation_interval=10), output=output/'runtime')
     runtime.writer = DashboardWriter(runtime.writer, output/'dashboard.jsonl')
     runtime.provenance = dict(seed=seed, profile=profile, source='SUMO_SIMULATED',
@@ -38,6 +42,7 @@ def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
         working_tree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
         inputs_sha256={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in [NET, cfg, cfg.parent/'traffic.rou.xml']},
         seconds_per_simulation_second=seconds_per_step, network=str(NET),
+        soft_change_confirmation_seconds=confirmation_seconds,
         hospital_availability='SIMULATED; not verified clinical capacity')
     runtime._record_evidence('RUN_PROVENANCE', provenance=runtime.provenance)
     runtime._record_evidence('INCIDENT', location=[80.170, 12.829], source='SIMULATED_INCIDENT')
@@ -124,6 +129,8 @@ def main():
     parser.add_argument('--events', type=Path, help='Completed Chennai output directory for replay')
     parser.add_argument('--profile', choices=['NORMAL', 'HEAVY', 'PEAK'], default='NORMAL')
     parser.add_argument('--seconds-per-step', type=float, default=0.33)
+    parser.add_argument('--confirmation-seconds', type=float, default=20.0)
+    parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--port', type=int, default=8770)
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--no-server', action='store_true')
@@ -148,7 +155,8 @@ def main():
     output = args.output or ROOT/'data/output/chennai'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
     health = run(output, args.profile, args.seconds_per_step, args.port,
                  not args.no_server, not args.no_browser, args.mode,
-                 keep_open=not args.exit_on_complete)
+                 seed=args.seed, keep_open=not args.exit_on_complete,
+                 confirmation_seconds=args.confirmation_seconds)
     print(json.dumps(health, indent=2))
     if health['summary']['terminal_outcome'] != 'SUCCESS':
         raise SystemExit(1)
