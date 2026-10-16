@@ -196,7 +196,7 @@ function renderTrafficPanel(state) {
   show('traffic-counts',`${external.observation_count || observations.length} observations · ${external.matched_roads || 0} matched roads · ${external.unmatched_records || 0} unmatched · ${external.stale_records || 0} STALE / EXPIRED · ${external.unknown_time_records || 0} UNKNOWN time`);
   const ages=observations.map(o=>o.age_seconds).filter(v=>typeof v==='number');
   show('traffic-time',`Last successful fetch: ${external.last_update || 'UNAVAILABLE'} · Source age: ${ages.length?num(Math.max(...ages))+' s':'UNKNOWN'} · Coverage bounds: ${pretty(external.coverage_area)} · HERE / TomTom coverage unverified unless authorized and measured`);
-  show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0}`);
+  show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0} · Quarantined future timestamps: ${external.quarantine_count || 0}`);
   const ids=[...new Set(observations.flatMap(o=>o.matched_sumo_edges || []))];
   if(selectedTrafficRoad && !ids.includes(selectedTrafficRoad))ids.unshift(selectedTrafficRoad);
   if(!selectedTrafficRoad)selectedTrafficRoad=ids[0] || '';

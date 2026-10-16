@@ -55,6 +55,27 @@ def assert_closure_transitions(page, state, output):
         if incident is None:
             page.locator('#traffic-panel').scroll_into_view_if_needed()
             page.screenshot(path=str(output/'reopening.png'))
+    # A bad source clock must not replace the current closure or block a later
+    # valid reopening. Diagnostics are visible, but the invalid row is not drawn.
+    provider.rows = [replace(sample,observation_id='future-clock',
+        observation_timestamp=clock[0]+timedelta(days=365),incident_type=None)]
+    service.poll_once()
+    assert service.snapshot()['observations'][0]['observation_id'] == 'closure-state-2'
+    assert service.snapshot()['quarantine_count'] == 1
+    frame['chennai']['external'] = service.snapshot()
+    page.evaluate('(state)=>{renderTrafficPanel(state);renderTrafficOverlay(state.chennai);}',frame)
+    expect(page.locator('#traffic-errors')).to_contain_text('Quarantined future timestamps: 1')
+    assert page.evaluate("[...externalEntities.keys()].filter(id=>id.startsWith('external-incident:')).length") == 1
+    clock[0] += timedelta(seconds=30)
+    provider.rows = [replace(sample,observation_id='clock-recovered',
+        observation_timestamp=clock[0],incident_type=None,incident_description=None)]
+    service.poll_once()
+    assert service.snapshot()['observations'][0]['observation_id'] == 'clock-recovered'
+    frame['chennai']['external'] = service.snapshot()
+    page.evaluate('(state)=>{renderTrafficPanel(state);renderTrafficOverlay(state.chennai);renderFallback(state);}',frame)
+    assert page.evaluate("[...externalEntities.keys()].filter(id=>id.startsWith('external-incident:')).length") == 0
+    assert page.locator('#fallback text').filter(has_text='ROAD_CLOSURE').count() == 0
+    observed.append(dict(state='FUTURE_CLOCK_QUARANTINED_AND_RECOVERED',markers=0,svgMarkers=0))
     return observed
 
 

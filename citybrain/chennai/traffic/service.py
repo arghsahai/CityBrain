@@ -28,9 +28,13 @@ class TrafficService:
         self._stop, self._wake = threading.Event(),threading.Event()
         self._thread = None
         self._cache = OrderedDict()
+        # Diagnostic metadata only; never eligible for current observations or
+        # ordering watermarks. This history is bounded independently of cache.
+        self._quarantine = OrderedDict()
         self._status = getattr(provider,'status','WAITING')
         self._errors, self._last_success, self._last_attempt = [],None,None
         self.successes = self.failures = self.duplicates = self.out_of_order = 0
+        self.quarantined_total = 0
 
     def start(self):
         if self._thread is not None:
@@ -60,11 +64,18 @@ class TrafficService:
             now = self.clock()
             try:
                 result = self.provider.fetch(now)
-                matched = [self.matcher.match(o) for o in result.observations[:2000]]
+                eligible, quarantined = [], []
+                for observation in result.observations[:2000]:
+                    _,age,problem = self.freshness.classify(observation.observation_timestamp,now)
+                    if problem == 'SOURCE_CLOCK_AHEAD':
+                        quarantined.append((observation,age))
+                    else:
+                        eligible.append(observation)
+                matched = [self.matcher.match(o) for o in eligible]
             except Exception:
                 # No exception text: third-party/custom transports may embed keys.
                 from .provider import FetchResult
-                result,matched = FetchResult(status='PROVIDER_UNAVAILABLE',errors=['FETCH_OR_MATCH_FAILED'],retry_after=60),[]
+                result,matched,quarantined = FetchResult(status='PROVIDER_UNAVAILABLE',errors=['FETCH_OR_MATCH_FAILED'],retry_after=60),[],[]
             with self._lock:
                 if self._stop.is_set():
                     return self.poll_seconds
@@ -75,6 +86,18 @@ class TrafficService:
                     self._last_success = now
                 elif result.status not in {'NOT_CONFIGURED','READY_BUT_NOT_TESTED'}:
                     self.failures += 1
+                for observation,age in quarantined:
+                    key = (*observation.stream_key,observation.observation_id)
+                    self.quarantined_total += 1
+                    self._quarantine[key] = dict(observation_id=observation.observation_id,
+                        provider=observation.provider,provider_segment_id=observation.provider_segment_id,
+                        observation_kind=observation.observation_kind,stream_id=observation.stream_id,
+                        observation_timestamp=observation.observation_timestamp.isoformat(),
+                        quarantined_at=now.isoformat(),source_type=observation.source_type,
+                        freshness_status='UNKNOWN',reason='SOURCE_CLOCK_AHEAD',age_at_rejection=age)
+                    self._quarantine.move_to_end(key)
+                    while len(self._quarantine) > min(64,self.max_records):
+                        self._quarantine.popitem(last=False)
                 for observation in matched:
                     key = observation.stream_key
                     old = self._cache.get(key)
@@ -101,7 +124,9 @@ class TrafficService:
             status, errors = self._status,list(self._errors)
             last_success,last_attempt = self._last_success,self._last_attempt
             counts = dict(successful_fetches=self.successes,failed_fetches=self.failures,
-                          duplicates=self.duplicates,out_of_order=self.out_of_order)
+                          duplicates=self.duplicates,out_of_order=self.out_of_order,
+                          quarantined_total=self.quarantined_total)
+            quarantine = [dict(row) for row in self._quarantine.values()]
         rows = []
         for observation in records:
             freshness,age,problem = self.freshness.classify(observation.observation_timestamp,now)
@@ -121,6 +146,7 @@ class TrafficService:
             display_status='LIVE DATA' if verified_live else status.replace('_',' '),
             match_status='VERIFIED ROAD MATCHES' if matched else 'NO VERIFIED ROAD MATCHES',
             observations=rows,last_update=last_success.isoformat() if last_success else None,
+            quarantine=quarantine,quarantine_count=len(quarantine),
             last_attempt=last_attempt.isoformat() if last_attempt else None,
             coverage_area=getattr(self.provider,'bounds',None),errors=errors,
             freshness_policy=dict(fresh_seconds=self.freshness.fresh_seconds,expired_seconds=self.freshness.expired_seconds,future_tolerance=self.freshness.future_tolerance),
