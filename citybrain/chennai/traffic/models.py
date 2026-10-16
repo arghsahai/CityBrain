@@ -52,14 +52,18 @@ class TrafficObservation:
     raw_measurements: dict = field(default_factory=dict)
     quality: tuple = ()
     recording_provenance: str | None = None
+    observation_kind: str = 'FLOW'
+    stream_id: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.observation_id,str) or not isinstance(self.provider,str) or not self.observation_id or not self.provider or self.source_type not in SOURCES:
             raise ValueError('Invalid observation identity/source')
-        for key in ('provider_segment_id','incident_type','incident_description'):
+        for key in ('provider_segment_id','incident_type','incident_description','stream_id'):
             value = getattr(self,key)
             if value is not None and (not isinstance(value,str) or len(value)>4096):
                 raise ValueError('Invalid textual measurement')
+        if self.observation_kind not in {'FLOW','INCIDENT'}:
+            raise ValueError('Observation kind must be FLOW or INCIDENT')
         if not isinstance(self.raw_measurements,dict):
             raise ValueError('Raw measurements must be an object')
         if len(json.dumps(self.raw_measurements,allow_nan=False)) > 65536:
@@ -85,6 +89,12 @@ class TrafficObservation:
             if distance > 2000:
                 raise ValueError('Discontinuous geometry; split into observations')
         object.__setattr__(self, 'road_geometry', geometry)
+
+    @property
+    def stream_key(self):
+        """Closure/type is mutable state; only the underlying stream identifies it."""
+        return (self.provider,self.observation_kind,
+                self.stream_id or self.provider_segment_id or self.observation_id)
 
     def to_dict(self):
         result = asdict(self)

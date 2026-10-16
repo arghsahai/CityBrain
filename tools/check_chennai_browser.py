@@ -2,8 +2,60 @@
 import argparse
 import json
 from pathlib import Path
+import sys
 
 from playwright.sync_api import sync_playwright, expect
+
+
+def assert_closure_transitions(page, state, output):
+    """Synthetic backend-to-renderer regression; never issues provider requests."""
+    from copy import deepcopy
+    from dataclasses import replace
+    from datetime import timedelta
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    from citybrain.chennai.network import PILOT, read_network
+    from citybrain.chennai.traffic import ReplayTrafficProvider
+    from citybrain.chennai.traffic.matching import RoadMatcher
+    from citybrain.chennai.traffic.provider import FetchResult
+    from citybrain.chennai.traffic.service import TrafficService
+
+    sample = ReplayTrafficProvider(PILOT/'scenarios/traffic-sample-v22.json').records[0]
+    clock = [sample.observation_timestamp]
+    class SyntheticProvider:
+        name = 'REPLAY'
+        rows = []
+        def fetch(self, now):
+            return FetchResult(self.rows,'REPLAY')
+    provider = SyntheticProvider()
+    service = TrafficService(provider,RoadMatcher(read_network()),clock=lambda:clock[0])
+    observed = []
+    for index,incident in enumerate(('ROAD_CLOSURE',None,'ROAD_CLOSURE')):
+        clock[0] = sample.observation_timestamp+timedelta(seconds=30*index)
+        provider.rows = [replace(sample,observation_id='closure-state-'+str(index),
+            observation_timestamp=clock[0],retrieved_at=clock[0],incident_type=incident,
+            incident_description='Synthetic hotfix browser regression' if incident else None)]
+        service.poll_once()
+        if incident is None:
+            provider.rows = [replace(sample,observation_id='late-closure',
+                observation_timestamp=clock[0]-timedelta(seconds=1),incident_type='ROAD_CLOSURE')]
+            service.poll_once()  # An older closure must not resurrect the marker.
+        frame = deepcopy(state)
+        frame['chennai']['external'] = service.snapshot()
+        assert len(frame['chennai']['external']['observations']) == 1
+        rendered = page.evaluate('''state=>{
+            playing=false;renderTrafficPanel(state);renderTrafficOverlay(state.chennai);renderFallback(state);
+            return {markers:[...externalEntities.keys()].filter(id=>id.startsWith('external-incident:')).length,
+                svgMarkers:[...document.querySelectorAll('#fallback text')].filter(e=>e.textContent.includes('ROAD_CLOSURE')).length};
+        }''',frame)
+        expected = 1 if incident else 0
+        assert rendered == dict(markers=expected,svgMarkers=expected),rendered
+        expect(page.locator('#traffic-status')).to_contain_text('SYNTHETIC_SAMPLE')
+        expect(page.locator('#traffic-comparison')).to_contain_text('MATCHED')
+        observed.append(dict(state=incident or 'OPEN',**rendered))
+        if incident is None:
+            page.locator('#traffic-panel').scroll_into_view_if_needed()
+            page.screenshot(path=str(output/'reopening.png'))
+    return observed
 
 
 def assert_rendered_route(page,state,geography):
@@ -18,6 +70,7 @@ def main():
     parser.add_argument('--url',default='http://127.0.0.1:8770')
     parser.add_argument('--output',type=Path,default=Path('docs/chennai'))
     parser.add_argument('--traffic',action='store_true',help='Verify synthetic advisory panel and 3D/2D overlays')
+    parser.add_argument('--closure-hotfix',action='store_true',help='Verify backend closure/open/closure replacement and both marker layers')
     parser.add_argument('--keep-at',type=int,help='Verify an observed stability-deferral timestamp')
     parser.add_argument('--accepted-replan-at',type=int,help='Verify a recorded accepted replan')
     args=parser.parse_args()
@@ -114,6 +167,8 @@ def main():
             frame['chennai']['external'].update(stale_records=1,unknown_time_records=0)
             page.evaluate('(state)=>renderTrafficPanel(state)',frame)
             expect(page.locator('#traffic-comparison')).to_contain_text('EXPIRED')
+        closure_states = (assert_closure_transitions(page,
+            page.request.get(args.url+'/api/state?at=220').json(),args.output) if args.closure_hotfix else [])
         assert not errors,errors
         result=dict(errors=errors,status=page.locator('#outcome').inner_text(),
             checks=['Cesium WebGL scene','moving observed ambulance','visible vehicles and both signals',
@@ -122,6 +177,7 @@ def main():
                    (['guarded KEEP and unchanged accepted P0'] if args.keep_at is not None else [])+
                    (['synthetic advisory source labels','separate external 3D and SVG flow/incident overlays','external geometry matches backend','selected road comparison','synthetic UI missing timestamp UNKNOWN and expired source label'] if args.traffic else []),
             traffic_checked=args.traffic,
+            closure_states=closure_states,
             accepted_replan_checked=args.accepted_replan_at,
             browser=browser.version)
         (args.output/'browser-check.json').write_text(json.dumps(result,indent=2)+'\n')

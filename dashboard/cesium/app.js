@@ -170,7 +170,7 @@ function renderTrafficOverlay(frame) {
   const present=new Set();
   for(const obs of frame.external?.observations || []) {
     if(obs.road_geometry.length<2)continue;
-    const id='external-flow:'+obs.provider+':'+obs.provider_segment_id;
+    const id='external-flow:'+obs.provider+':'+(obs.observation_kind || 'FLOW')+':'+(obs.stream_id || obs.provider_segment_id || obs.observation_id);
     present.add(id);
     let entity=externalEntities.get(id);
     if(!entity){entity=viewer.entities.add({id,name:obs.source_type+' · '+obs.provider_segment_id,polyline:{positions:[],width:5}});externalEntities.set(id,entity);}
@@ -182,6 +182,7 @@ function renderTrafficOverlay(frame) {
       const [lon,lat]=obs.road_geometry[Math.floor(obs.road_geometry.length/2)];
       const markerEntity=marker(incidentId,lon,lat,obs.source_type+' · '+obs.incident_type,'#ffd166');
       markerEntity.position=position(lon,lat,15);
+      markerEntity.label.text=obs.source_type+' · '+obs.incident_type;
       markerEntity.description=safeDescription(`${obs.incident_description || obs.incident_type} · ${obs.freshness_status} · ${obs.matching_status}`);
       externalEntities.set(incidentId,markerEntity);
     }

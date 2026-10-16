@@ -40,6 +40,8 @@ def here_rows(payload, now, *, incidents=False):
                     incident_type=details.get('type') if incidents else ('ROAD_CLOSURE' if details.get('traversability')=='closed' else None),
                     incident_description=description.get('value') if isinstance(description,dict) else None,
                     observation_timestamp=payload.get('sourceUpdated'),raw_measurements=details,
+                    observation_kind='INCIDENT' if incidents else 'FLOW',
+                    stream_id=str(details.get('originalId') or segment)+':'+str(part_index) if incidents else None,
                     quality=('SOURCE_UPDATE_TIME; NOT INDIVIDUAL_SENSOR_TIME',)))
         except (ValueError, TypeError, KeyError, AttributeError):
             errors.append(f'INVALID_RECORD:{index}')

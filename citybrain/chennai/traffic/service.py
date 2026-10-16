@@ -76,8 +76,7 @@ class TrafficService:
                 elif result.status not in {'NOT_CONFIGURED','READY_BUT_NOT_TESTED'}:
                     self.failures += 1
                 for observation in matched:
-                    key = (observation.provider,observation.provider_segment_id or observation.observation_id,
-                           bool(observation.incident_type))
+                    key = observation.stream_key
                     old = self._cache.get(key)
                     if old is not None:
                         if observation.observation_id == old.observation_id:
