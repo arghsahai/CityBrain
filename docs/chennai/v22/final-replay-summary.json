@@ -1,0 +1,127 @@
+{
+  "terminal_outcome": "SUCCESS",
+  "dispatch_time": 51.0,
+  "arrival_time": 704.0,
+  "travel_time": 653.0,
+  "route_changes": 0,
+  "stability_guard": {
+    "confirmation_seconds": 20.0,
+    "pending": false
+  },
+  "evidence_failures": [],
+  "provenance": {
+    "seed": 17,
+    "profile": "NORMAL",
+    "source": "SUMO_SIMULATED",
+    "git_commit": "4ed30b79b1ae1c8f1063fa4cd9d924762fc5cc0c",
+    "working_tree_dirty": true,
+    "inputs_sha256": {
+      "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+      "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-final-replay/inputs/run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+      "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-final-replay/inputs/traffic.rou.xml": "c34187a759e5de8ffd78ed431f3b7d8a34f2f2b23432d0272cee8c6127e8835b"
+    },
+    "seconds_per_simulation_second": 0.0,
+    "network": "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml",
+    "soft_change_confirmation_seconds": 20.0,
+    "traffic_source": "replay",
+    "traffic_advisory_only": true,
+    "traffic_requests_authorized": false,
+    "hospital_availability": "SIMULATED; not verified clinical capacity"
+  },
+  "telemetry_failures": 0,
+  "dashboard_write_failures": 0,
+  "traffic": {
+    "provider": "REPLAY",
+    "provider_statuses": {
+      "HERE": "NOT_CONFIGURED",
+      "TOMTOM": "NOT_CONFIGURED",
+      "REPLAY": "REPLAY"
+    },
+    "source": "SYNTHETIC_SAMPLE",
+    "status": "REPLAY",
+    "display_status": "REPLAY",
+    "match_status": "VERIFIED ROAD MATCHES",
+    "observations": [
+      {
+        "observation_id": "synthetic-2",
+        "provider": "SYNTHETIC",
+        "provider_segment_id": "sample-segment",
+        "road_geometry": [
+          [
+            80.17130052615333,
+            12.854883430368144
+          ],
+          [
+            80.17137521139317,
+            12.855123911038515
+          ],
+          [
+            80.17148322666058,
+            12.855429689441657
+          ],
+          [
+            80.17158267435352,
+            12.855706596913631
+          ],
+          [
+            80.17173089722557,
+            12.856088183351723
+          ],
+          [
+            80.17184133601472,
+            12.85630147003929
+          ],
+          [
+            80.17200568656737,
+            12.85628942032401
+          ]
+        ],
+        "direction": "FORWARD",
+        "retrieved_at": "2026-10-16T00:06:40+00:00",
+        "source_type": "SYNTHETIC_SAMPLE",
+        "current_speed": 8.0,
+        "free_flow_speed": 10.0,
+        "current_travel_time": null,
+        "free_flow_travel_time": null,
+        "congestion": 0.2,
+        "incident_type": "SAMPLE_CONGESTION",
+        "incident_description": "Synthetic demonstration, not observed Chennai traffic",
+        "observation_timestamp": "2026-10-16T00:06:40+00:00",
+        "freshness_status": "STALE",
+        "matching_status": "MATCHED",
+        "matched_sumo_edges": [
+          "-1192027270"
+        ],
+        "matching_confidence": 0.9999999998859703,
+        "match_reason": "All samples agree in heading, distance, progress and directed connectivity",
+        "raw_measurements": {},
+        "quality": [],
+        "recording_provenance": "SYNTHETIC_SAMPLE",
+        "applied_to_sumo": false,
+        "age_seconds": 304.0,
+        "time_quality": null
+      }
+    ],
+    "last_update": "2026-10-16T00:11:44+00:00",
+    "last_attempt": "2026-10-16T00:11:44+00:00",
+    "coverage_area": null,
+    "errors": [],
+    "freshness_policy": {
+      "fresh_seconds": 120,
+      "expired_seconds": 600,
+      "future_tolerance": 5
+    },
+    "observation_count": 1,
+    "matched_roads": 1,
+    "unmatched_records": 0,
+    "stale_records": 1,
+    "unknown_time_records": 0,
+    "applied_to_sumo": false,
+    "successful_fetches": 705,
+    "failed_fetches": 0,
+    "duplicates": 0,
+    "out_of_order": 0
+  },
+  "wall_clock_seconds": 204.30514916699758,
+  "accepted_plans_equal_to_baseline": true
+}

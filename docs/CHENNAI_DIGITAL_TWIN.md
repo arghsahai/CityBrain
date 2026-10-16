@@ -1,5 +1,11 @@
 # CityBrain V2 — Chennai digital twin
 
+V2.2 advisory traffic support is now implemented. See
+[CHENNAI_LIVE_TRAFFIC.md](CHENNAI_LIVE_TRAFFIC.md) for offline replay, optional
+HERE/TomTom setup, source labels and limitations. Existing SUMO/planner behavior
+and the Chennai 20-second guard remain authoritative. Real traffic coverage is
+unverified; credentials and explicit request authorization are required.
+
 The Chennai pilot uses actual OpenStreetMap road geometry, SUMO vehicle dynamics,
 the existing CityBrain Core/planner/runtime, and a locally bundled CesiumJS view.
 It is a simulation and university demonstration, not a live emergency service.
