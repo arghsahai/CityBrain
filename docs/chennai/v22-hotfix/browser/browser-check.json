@@ -1,0 +1,46 @@
+{
+  "errors": [],
+  "status": "SUCCESS \u00b7 verified_hospital_arrival",
+  "checks": [
+    "Cesium WebGL scene",
+    "moving observed ambulance",
+    "visible vehicles and both signals",
+    "accepted route geometry matches backend",
+    "actual signal states",
+    "SVG fallback",
+    "replay time filtering",
+    "terminal SUCCESS",
+    "800px layout",
+    "guarded KEEP and unchanged accepted P0",
+    "synthetic advisory source labels",
+    "separate external 3D and SVG flow/incident overlays",
+    "external geometry matches backend",
+    "selected road comparison",
+    "synthetic UI missing timestamp UNKNOWN and expired source label"
+  ],
+  "traffic_checked": true,
+  "closure_states": [
+    {
+      "state": "ROAD_CLOSURE",
+      "markers": 1,
+      "svgMarkers": 1
+    },
+    {
+      "state": "OPEN",
+      "markers": 0,
+      "svgMarkers": 0
+    },
+    {
+      "state": "ROAD_CLOSURE",
+      "markers": 1,
+      "svgMarkers": 1
+    },
+    {
+      "state": "FUTURE_CLOCK_QUARANTINED_AND_RECOVERED",
+      "markers": 0,
+      "svgMarkers": 0
+    }
+  ],
+  "accepted_replan_checked": null,
+  "browser": "155.0.8059.80"
+}

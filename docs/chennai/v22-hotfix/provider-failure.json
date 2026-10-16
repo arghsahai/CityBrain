@@ -1,0 +1,13 @@
+{
+  "terminal_outcome": "TIMEOUT",
+  "dispatch_time": 51.0,
+  "evidence_failures": [],
+  "stability_guard": {
+    "confirmation_seconds": 20.0,
+    "pending": false
+  },
+  "provider_failures": 1,
+  "provider_status": "PROVIDER_UNAVAILABLE",
+  "telemetry_failures": 0,
+  "dashboard_write_failures": 0
+}

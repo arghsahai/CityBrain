@@ -1,5 +1,9 @@
 # CITYBRAIN V2.2 — FINAL IMPLEMENTATION REPORT
 
+**Subsequent correctness hotfix:** three issues found after this implementation
+checkpoint are corrected and revalidated in [CHENNAI_V22_HOTFIX.md](CHENNAI_V22_HOTFIX.md).
+The results below remain the original V2.2 implementation record.
+
 1. **Branch/base/final HEAD.** `feature/chennai-traffic-providers`, based on
    `4ed30b79b1ae1c8f1063fa4cd9d924762fc5cc0c`. Fetched origin/main is already an
    ancestor. Exact final HEAD and local commit IDs are provided in the delivery

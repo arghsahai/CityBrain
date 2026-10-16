@@ -37,6 +37,9 @@ directed WGS84 `(longitude, latitude)` polyline, nullable speed (m/s), travel ti
 and retrieval timestamps, provenance, freshness, match status/edges/confidence/reason,
 raw permitted measurements and quality notes. `to_dict()` is JSON serializable and
 always includes `applied_to_sumo=false`. Null means unavailable, not zero.
+`observation_kind` separates FLOW from INCIDENT streams; optional `stream_id`
+identifies an event across provider revisions. `matching_coverage` reports the
+accepted-path longitudinal overlap fraction, including rejected low-coverage cases.
 
 Missing, negative, boolean or nonfinite numeric measurements, naive timestamps,
 invalid coordinates, individual geometry jumps over 2 km, overlarge geometry and
@@ -145,6 +148,17 @@ short (<15 m) geometry, unknown direction and disconnected fragments are rejecte
 or explicitly insufficient. A provider segment may match a connected series of
 SUMO edges. No provider road ID is treated as a SUMO edge ID.
 
+The correctness hotfix additionally requires **95% longitudinal coverage** by
+finite road segments on that accepted path (`minimum_coverage=0.95`, configurable).
+For every provider leg, linear interval clipping constrains both the road-axis
+projection to [0, road length] and perpendicular distance to the existing tolerance.
+The union of those intervals gives length-weighted provider coverage; overlapping
+road pieces are not double counted. Clamped endpoint buffers never count as extent.
+A provider fragment fully inside a longer road is supported; insufficient partial
+overlap is UNMATCHED with no SUMO edge assignment. The reviewed 40 m / 10 m case is
+25% coverage and rejected. Up to 5% uncovered geometry permits small discrepancies;
+this is a conservative pilot policy, not a calibrated matching accuracy claim.
+
 Outputs are MATCHED / AMBIGUOUS / UNMATCHED / INSUFFICIENT_DATA, with reason,
 provider segment ID, SUMO IDs and geometric confidence. Confidence is a heuristic,
 not a calibrated probability. Tests cover synthetic opposite carriageways, close
@@ -156,16 +170,34 @@ Only passenger-permitted edges participate; emergency-only roads are not inferre
 ## Freshness and bounded service
 
 Defaults: FRESH through 120 s, STALE through 600 s, EXPIRED thereafter. No source
-time means UNKNOWN; a source clock >5 s ahead also means UNKNOWN. Small tolerated
+time means UNKNOWN; a source clock >5 s ahead is UNKNOWN and quarantined before
+it can replace current data or change the ordering watermark. Small tolerated
 clock skew retains its signed age. Retrieval time never substitutes for source time.
 These pilot thresholds are configurable, not calibrated provider guarantees.
 
 One daemon worker performs non-overlapping fetches and matching. A bounded
 last-valid cache holds 256 segment/type records by default (maximum 2,000), evicting
-old insertion/update entries. Duplicates are counted; repeated retrieval updates
-retrieval time only. Older source records cannot replace newer cached measurements.
+old insertion/update entries. Cache identity is provider + observation kind +
+(stream ID, otherwise segment ID, otherwise observation ID). Closure state is not
+part of identity: newer closure → open → closure values replace the current FLOW
+record. Independent INCIDENT streams remain separate. HERE incidents use
+`originalId` when available to retain identity across version IDs. When a provider
+supplies no stable identity, the adapter's documented geometry fingerprint or
+record identity is the compatibility fallback; changing/split geometry still needs
+coverage validation. No arbitrary association between unrelated streams is inferred.
+
+Duplicates require equality of normalized contents excluding retrieval time; reusing
+an observation ID cannot hide a new state or bypass timestamp ordering. Older source
+records cannot replace newer cached measurements. Unknown-time TomTom flow updates
+retain UNKNOWN quality and use sequential poll arrival order, not invented source time.
 The last valid observation survives outages with its own source age and failure
-status; expired data is visibly historical. `start()` is idempotent and single-use;
+status; expired data is visibly historical. Future-dated records are excluded from
+current observations and all overlays. A separate metadata-only quarantine history
+holds at most min(64, cache size) records, always UNKNOWN, with rejection reason and
+detection time; it is never automatically promoted. Subsequent valid records can
+recover immediately because quarantine does not affect the current watermark.
+The panel reports quarantined timestamp count; full diagnostics reuse the existing
+external-data details. Repeated rejections are counted separately. `start()` is idempotent and single-use;
 `stop()` returns immediately, wakes a waiting worker and discards late responses.
 An in-flight socket finishes under its timeout; it does not hold up terminal cleanup.
 Snapshot locks cover cache access only; network and matching hold no cache lock.
@@ -250,3 +282,5 @@ A future separately validated assimilation boundary would be: MATCHED FRESH traf
 It requires authorized coverage sampling, directional reference validation, matching
 accuracy evaluation, timestamp policy, unit/calibration checks, conflict resolution,
 reproducibility and its own planner study. **That path is not activated in V2.2.**
+
+Correctness hotfix results and limits: [CHENNAI_V22_HOTFIX.md](CHENNAI_V22_HOTFIX.md).
