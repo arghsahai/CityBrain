@@ -71,6 +71,7 @@ def main():
             assert state['execution']['verification']=='VERIFIED'
             assert state['execution']['intended_suffix']==state['plan']['route']
             assert_rendered_route(page,state,geography)
+            page.wait_for_timeout(1500)
             page.screenshot(path=str(args.output/'replan.png'))
         page.locator('#flat').click()
         assert page.locator('#fallback').is_visible()

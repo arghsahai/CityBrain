@@ -1,5 +1,10 @@
 # Chennai traffic integration — V2.1 Phase A gate
 
+**Update:** the subsequent [Chennai stability hotfix](CHENNAI_STABILITY_FIX.md) is
+implemented and ready for independent review. The blocked-stage findings below
+describe the pre-fix baseline and are retained as audit history. No HERE/TomTom
+integration has been started; provider work still awaits independent stability sign-off.
+
 **Status: BLOCKED by baseline route-selection instability.** No live-provider
 implementation, network request, API charge, planner change or SUMO control change
 was introduced in this stage. The existing demonstration still executes and arrives

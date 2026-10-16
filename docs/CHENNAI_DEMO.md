@@ -15,6 +15,12 @@ One command starts SUMO, the existing CityBrain runtime, telemetry and the brows
 ./tools/run_chennai.sh
 ```
 
+The Chennai runtime now confirms soft route-change recommendations for 20 simulation
+seconds. Confirmed hard blockages retain immediate handling. Configure the window
+with `--confirmation-seconds 20` and the seed with `--seed 19`. The revision count
+emerges from actual decisions: guarded seed 17 accepted P0 only; seed 19 accepted
+one sustained replan. See [the stability report](CHENNAI_STABILITY_FIX.md).
+
 Dashboard: **http://127.0.0.1:8770**. Output goes to a fresh timestamped directory
 under `data/output/chennai/`. Final metrics remain visible after the simulation
 finishes; Ctrl-C closes the local server. Ctrl-C during simulation records an

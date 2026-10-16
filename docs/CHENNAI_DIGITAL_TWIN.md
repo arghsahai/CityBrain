@@ -5,6 +5,10 @@ the existing CityBrain Core/planner/runtime, and a locally bundled CesiumJS view
 It is a simulation and university demonstration, not a live emergency service.
 The original 3×3, S08 networks and 180 research trials remain independent.
 
+The V2.1 hotfix adds a Chennai-only soft-proposal confirmation guard. Shared Core,
+planner, policy and route execution remain unchanged. The current guard, validated
+counts and limitations are documented in [CHENNAI_STABILITY_FIX.md](CHENNAI_STABILITY_FIX.md).
+
 ## Architecture
 
 ```text
