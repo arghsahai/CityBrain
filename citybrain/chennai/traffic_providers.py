@@ -1,7 +1,8 @@
 """Optional external observations. They cannot overwrite SUMO planner state.
 
-Live adapters are deliberately disabled pending credentials, coverage and terms
-verification. Replay records require explicit, geometrically checked edge maps.
+Legacy point-fixture replay is retained only for old recordings. New directional
+replay and optional HTTP adapters live in traffic/. No new launcher uses this
+legacy matcher, whose explicit-ID point contract is insufficient for live data.
 """
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -67,13 +68,6 @@ class ReplayProvider:
         return dict(source='REPLAY', observations=rows, status='Read-only offline fixture')
 
 
-class HEREProvider:
-    def observations(self, now):
-        return dict(source='UNAVAILABLE', provider='HERE', observations=[],
-            reason='Live adapter not implemented; credentials, coverage and licensing unverified')
-
-
-class TomTomProvider:
-    def observations(self, now):
-        return dict(source='UNAVAILABLE', provider='TomTom', observations=[],
-            reason='Live adapter not implemented; credentials, coverage and licensing unverified')
+# Compatibility exports. New launches use traffic/ and directional matching.
+from citybrain.chennai.traffic.here_provider import HERETrafficProvider as HEREProvider
+from citybrain.chennai.traffic.tomtom_provider import TomTomTrafficProvider as TomTomProvider
