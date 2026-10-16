@@ -47,6 +47,7 @@ class TrafficObservation:
     matching_status: str = 'INSUFFICIENT_DATA'
     matched_sumo_edges: tuple = ()
     matching_confidence: float | None = None
+    matching_coverage: float | None = None
     match_reason: str = 'Not evaluated'
     raw_measurements: dict = field(default_factory=dict)
     quality: tuple = ()
@@ -65,8 +66,8 @@ class TrafficObservation:
             raise ValueError('Raw measurement exceeds record budget')
         if self.direction not in {'FORWARD', 'UNKNOWN'}:
             raise ValueError('Direction must be FORWARD along geometry or UNKNOWN')
-        for key in ('current_speed', 'free_flow_speed', 'current_travel_time', 'free_flow_travel_time', 'congestion', 'matching_confidence'):
-            object.__setattr__(self, key, number(getattr(self, key), maximum=1 if key in {'congestion','matching_confidence'} else None))
+        for key in ('current_speed', 'free_flow_speed', 'current_travel_time', 'free_flow_travel_time', 'congestion', 'matching_confidence', 'matching_coverage'):
+            object.__setattr__(self, key, number(getattr(self, key), maximum=1 if key in {'congestion','matching_confidence','matching_coverage'} else None))
         for key in ('observation_timestamp', 'retrieved_at'):
             object.__setattr__(self, key, timestamp(getattr(self, key)))
         if self.retrieved_at is None:

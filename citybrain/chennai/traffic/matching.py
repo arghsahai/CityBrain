@@ -24,10 +24,39 @@ def projection(point, a,b,length):
     return math.hypot(point[0]-a[0]-ratio*dx,point[1]-a[1]-ratio*dy), ratio*length
 
 
+def overlap_interval(start, end, road_start, road_length, direction, tolerance):
+    """Clip a provider leg to a finite road strip, without endpoint clamping.
+
+    Both the longitudinal projection and perpendicular distance are linear in
+    the provider-leg parameter. Intersect their valid intervals with [0, 1].
+    A road endpoint's circular distance buffer is deliberately not coverage.
+    """
+    dx,dy = end[0]-start[0],end[1]-start[1]
+    x,y = start[0]-road_start[0],start[1]-road_start[1]
+    ux,uy = direction
+    lower,upper = 0.0,1.0
+    for origin,delta,minimum,maximum in (
+            (x*ux+y*uy,dx*ux+dy*uy,0,road_length),
+            (x*(-uy)+y*ux,dx*(-uy)+dy*ux,-tolerance,tolerance)):
+        if abs(delta) < 1e-12:
+            if origin < minimum-1e-9 or origin > maximum+1e-9:
+                return None
+        else:
+            first,last = sorted(((minimum-origin)/delta,(maximum-origin)/delta))
+            lower,upper = max(lower,first),min(upper,last)
+            if upper <= lower:
+                return None
+    return lower,upper
+
+
 class RoadMatcher:
-    def __init__(self, net, *, tolerance=15, ambiguity_margin=3, heading_degrees=35):
+    def __init__(self, net, *, tolerance=15, ambiguity_margin=3, heading_degrees=35,
+                 minimum_coverage=0.95):
         if not (0 < tolerance <= 30 and 0 < ambiguity_margin <= tolerance and 0 < heading_degrees < 90):
             raise ValueError('Invalid matching thresholds')
+        if isinstance(minimum_coverage,bool) or not math.isfinite(minimum_coverage) or not 0 < minimum_coverage <= 1:
+            raise ValueError('Minimum coverage must be within (0, 1]')
+        self.minimum_coverage = minimum_coverage
         self.net, self.tolerance, self.margin = net,tolerance,ambiguity_margin
         self.cosine = math.cos(math.radians(heading_degrees))
         self.edges, self.grid = {}, {}
@@ -44,9 +73,10 @@ class RoadMatcher:
                         self.grid.setdefault((x,y),[]).append((edge.getID(),part))
 
     def match(self, observation):
-        def result(status,reason,edges=(),confidence=None):
+        def result(status,reason,edges=(),confidence=None,coverage=None):
             return replace(observation,matching_status=status,match_reason=reason,
-                           matched_sumo_edges=tuple(edges),matching_confidence=confidence)
+                           matched_sumo_edges=tuple(edges),matching_confidence=confidence,
+                           matching_coverage=coverage)
         if len(observation.road_geometry) < 2 or observation.direction != 'FORWARD':
             return result('INSUFFICIENT_DATA','Requires a directed polyline, not a point or unverified direction')
         points = [self.net.convertLonLat2XY(*p) for p in observation.road_geometry]
@@ -100,5 +130,29 @@ class RoadMatcher:
             last_progress = progress
             distances.append(distance)
         # Confidence is a geometric heuristic, not a calibrated probability.
+        # Validate extent on the accepted connected path, not on arbitrary nearby
+        # roads. Merge intervals so curved/overlapping road parts cannot double
+        # count provider length. A provider subsegment inside a longer road is
+        # fully covered; a longer provider segment over a short road is not.
+        covered = 0.0
+        for a,b,length,_,tangent in parts:
+            intervals = []
+            for edge_id in path:
+                for road_start,_,road_length,_,direction in self.edges[edge_id][0]:
+                    if tangent[0]*direction[0]+tangent[1]*direction[1] < self.cosine:
+                        continue
+                    interval = overlap_interval(a,b,road_start,road_length,direction,self.tolerance)
+                    if interval is not None:
+                        intervals.append(interval)
+            end = 0.0
+            for first,last in sorted(intervals):
+                covered += max(0,last-max(first,end))*length
+                end = max(end,last)
+        coverage = min(1.0,covered/total)
+        if coverage+1e-9 < self.minimum_coverage:
+            return result('UNMATCHED',
+                f'Insufficient longitudinal coverage: {covered:.3f}/{total:.3f} m '
+                f'({coverage:.1%}); requires {self.minimum_coverage:.1%}',coverage=coverage)
         confidence = max(0,1-max(distances)/self.tolerance)
-        return result('MATCHED','All samples agree in heading, distance, progress and directed connectivity',path,confidence)
+        return result('MATCHED','Heading, distance, progress, directed connectivity and '
+                      f'longitudinal coverage verified ({coverage:.1%})',path,confidence,coverage)
