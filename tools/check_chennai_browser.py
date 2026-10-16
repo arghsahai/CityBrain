@@ -6,11 +6,19 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
 
+def assert_rendered_route(page,state,geography):
+    expected=[point for edge in state['plan']['route'] for point in geography['roads'][edge]['coordinates']]
+    rendered=page.evaluate('routeEntity.polyline.positions.getValue(viewer.clock.currentTime).map(p=>{const c=Cesium.Cartographic.fromCartesian(p);return [Cesium.Math.toDegrees(c.longitude),Cesium.Math.toDegrees(c.latitude)];})')
+    assert len(rendered)==len(expected)
+    assert all(abs(a-b)<1e-7 for actual,wanted in zip(rendered,expected) for a,b in zip(actual,wanted))
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url',default='http://127.0.0.1:8770')
     parser.add_argument('--output',type=Path,default=Path('docs/chennai'))
     parser.add_argument('--keep-at',type=int,help='Verify an observed stability-deferral timestamp')
+    parser.add_argument('--accepted-replan-at',type=int,help='Verify a recorded accepted replan')
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
     with sync_playwright() as playwright:
@@ -43,10 +51,7 @@ def main():
         assert page.evaluate('routeEntity.polyline.positions.getValue(viewer.clock.currentTime).length')>2
         state=page.request.get(args.url+'/api/state?at=200').json()
         geography=page.request.get(args.url+'/api/geography').json()
-        expected=[point for edge in state['plan']['route'] for point in geography['roads'][edge]['coordinates']]
-        rendered=page.evaluate('routeEntity.polyline.positions.getValue(viewer.clock.currentTime).map(p=>{const c=Cesium.Cartographic.fromCartesian(p);return [Cesium.Math.toDegrees(c.longitude),Cesium.Math.toDegrees(c.latitude)];})')
-        assert len(rendered)==len(expected)
-        assert all(abs(a-b)<1e-7 for actual,wanted in zip(rendered,expected) for a,b in zip(actual,wanted))
+        assert_rendered_route(page,state,geography)
         for signal in state['chennai']['signals']:
             assert signal['state'] in page.locator('#signals').inner_text()
         first=page.locator('#ambulance').inner_text()
@@ -55,6 +60,18 @@ def main():
         page.locator('#seek').dispatch_event('input')
         expect(page.locator('#time')).to_have_text('220 s',timeout=30000)
         assert page.locator('#ambulance').inner_text()!=first
+        if args.accepted_replan_at is not None:
+            at=args.accepted_replan_at
+            page.locator('#seek').fill(str(at))
+            page.locator('#seek').dispatch_event('input')
+            expect(page.locator('#time')).to_have_text(f'{at} s',timeout=30000)
+            state=page.request.get(args.url+f'/api/state?at={at}').json()
+            assert len(state['plans'])>=2
+            expect(page.locator('#replans')).to_have_text(str(len(state['plans'])))
+            assert state['execution']['verification']=='VERIFIED'
+            assert state['execution']['intended_suffix']==state['plan']['route']
+            assert_rendered_route(page,state,geography)
+            page.screenshot(path=str(args.output/'replan.png'))
         page.locator('#flat').click()
         assert page.locator('#fallback').is_visible()
         assert page.locator('#fallback polyline').count()>700
@@ -71,6 +88,7 @@ def main():
                     'accepted route geometry matches backend','actual signal states','SVG fallback',
                     'replay time filtering','terminal SUCCESS','800px layout']+
                    (['guarded KEEP and unchanged accepted P0'] if args.keep_at is not None else []),
+            accepted_replan_checked=args.accepted_replan_at,
             browser=browser.version)
         (args.output/'browser-check.json').write_text(json.dumps(result,indent=2)+'\n')
         print(json.dumps(result,indent=2))

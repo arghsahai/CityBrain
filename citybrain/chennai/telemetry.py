@@ -19,6 +19,12 @@ def compact_event(record):
                     v.get('congestion') == 'NO_TRAFFIC' and 'recommendation' in v)]
         return value
     record = project(record)
+    if record.get('action') == 'STABILITY_DECISION':
+        # The immediately preceding DECISION already supplies this observation.
+        # Keep the effective result, scores and guard evidence without duplicating
+        # every background vehicle in the compact presentation stream.
+        record.pop('context', None)
+        record.pop('active_plan', None)
     state = record.get('context', {}).get('planner_state', {})
     if state:
         relevant = {edge for path in state.get('routes', {}).values() for edge in path}

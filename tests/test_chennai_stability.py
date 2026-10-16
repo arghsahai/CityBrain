@@ -251,6 +251,21 @@ def test_stability_keep_is_the_dashboard_decision(runtime):
     assert any(e['action']=='KEEP' for e in state['timeline'])
 
 
+def test_compact_guard_record_keeps_decision_without_repeating_observation(runtime):
+    from citybrain.chennai.telemetry import compact_event
+    evaluate(runtime,20)
+    raw = runtime.runtime_evidence[-1]
+    assert raw['action']=='STABILITY_DECISION' and raw['context']
+    compact = compact_event(raw)
+    assert 'context' not in compact and 'active_plan' not in compact
+    assert compact['planner_result']['decision']=='KEEP'
+    assert raw['context']
+    state = reduce_events([compact_event(e) for e in runtime.runtime_evidence])
+    assert state['decision']['decision']=='KEEP'
+    assert state['plan']['revision']==0
+    assert state['position']['edge']=='a'
+
+
 @pytest.mark.parametrize('value',[-1,float('inf'),float('nan'),True])
 def test_configuration_rejects_invalid_windows(value):
     with pytest.raises(ValueError):
