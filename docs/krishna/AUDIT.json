@@ -1,0 +1,15 @@
+{
+  "authoritative_main": "fe471a863858489229c6bb956498405c77a2558e",
+  "trial_counts": [
+    120,
+    60
+  ],
+  "unique_identities": 180,
+  "matched_input_pairs": 90,
+  "matched_config_pairs": 90,
+  "s08_applied_routes_audited": 50,
+  "sources": {
+    "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/experiments/results/validation_matrix.csv": "5d0217e19d3fd213240d803e88b2893e45c750bf65b40a2e068b31f6d8010203",
+    "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/experiments/results/s08_validation.csv": "0ff7234fdaed59d16c319d4af397891acaf25fc73073eb1f063530e9080c2fa4"
+  }
+}

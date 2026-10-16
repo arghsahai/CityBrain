@@ -1,0 +1,9 @@
+{
+  "errors": [],
+  "first_simulation_time": 98.0,
+  "last_simulation_time": 109.0,
+  "source": "REPLAY",
+  "explicit_map_match": true,
+  "live_sumo_observation": true,
+  "browser_closed_while_runtime_active": true
+}

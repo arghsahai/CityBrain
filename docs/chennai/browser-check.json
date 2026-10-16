@@ -1,0 +1,15 @@
+{
+  "errors": [],
+  "status": "SUCCESS \u00b7 verified_hospital_arrival",
+  "checks": [
+    "Cesium WebGL scene",
+    "moving observed ambulance",
+    "visible vehicles and both signals",
+    "accepted route geometry",
+    "SVG fallback",
+    "replay time filtering",
+    "terminal SUCCESS",
+    "800px layout"
+  ],
+  "browser": "155.0.8059.40"
+}

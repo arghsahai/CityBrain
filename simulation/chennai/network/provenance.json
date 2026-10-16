@@ -1,0 +1,64 @@
+{
+  "source_url": "https://www.openstreetmap.org/api/0.6/map?bbox=80.125,12.815,80.185,12.865",
+  "downloaded_date": "2026-10-16",
+  "license": "ODbL-1.0",
+  "attribution": "\u00a9 OpenStreetMap contributors",
+  "source_sha256": "3276d00790a4f4674ccc4b744da7260132be865a955a699106ce429ec3e36225",
+  "network_sha256": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+  "netconvert_version": "Eclipse SUMO netconvert 1.27.1",
+  "commands": [
+    [
+      "/Library/Frameworks/EclipseSUMO.framework/Versions/1.27.1/EclipseSUMO/bin/netconvert",
+      "--osm-files",
+      "<REPO>/simulation/chennai/network/chennai.osm.xml",
+      "--type-files",
+      "<REPO>/simulation/chennai/network/osmNetconvert.typ.xml",
+      "--output-file",
+      "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-osm-1vrox0i6/raw.net.xml",
+      "--geometry.remove",
+      "--roundabouts.guess",
+      "--ramps.guess",
+      "--junctions.join",
+      "--keep-edges.by-vclass",
+      "passenger,emergency",
+      "--no-turnarounds",
+      "--output.street-names",
+      "true",
+      "--xml-validation",
+      "never"
+    ],
+    [
+      "/Library/Frameworks/EclipseSUMO.framework/Versions/1.27.1/EclipseSUMO/bin/netconvert",
+      "--sumo-net-file",
+      "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-osm-1vrox0i6/raw.net.xml",
+      "--keep-edges.input-file",
+      "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-osm-1vrox0i6/edges.txt",
+      "--output-file",
+      "<REPO>/simulation/chennai/network/chennai.net.xml",
+      "--tls.set",
+      "cluster_1945600982_308878067,7732945699",
+      "--no-turnarounds",
+      "--xml-validation",
+      "never"
+    ],
+    [
+      "/Library/Frameworks/EclipseSUMO.framework/Versions/1.27.1/EclipseSUMO/bin/netconvert",
+      "--sumo-net-file",
+      "<REPO>/simulation/chennai/network/chennai.net.xml",
+      "--keep-edges.input-file",
+      "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-corridor-3dq642td/corridor.txt",
+      "--output-file",
+      "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-corridor-3dq642td/corridor.net.xml",
+      "--xml-validation",
+      "never"
+    ]
+  ],
+  "selection": "Main-road corridor in 4.6 \u00d7 4.4 km envelope: primary/tertiary roads, legal alternate emergency paths, hospital access paths and one-hop feeders; full selected edge geometry retained.",
+  "vit_verification": "OSM way 336095563 contains the VIT campus; reference 12.8408,80.1540 lies within its mapped boundary.",
+  "limitations": [
+    "OSM completeness and restrictions are not a ground survey.",
+    "Two simulated signals added at real junctions; not evidence of physical traffic lights.",
+    "Nearest reachable hospital road is not a verified driveway or emergency entrance."
+  ],
+  "restriction_audit": "The source no_right_turn relation 17954113 references ways outside the retained corridor. No surveyed restriction dataset is available for the retained area; route turns follow imported SUMO lane connections."
+}

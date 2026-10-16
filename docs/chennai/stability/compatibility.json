@@ -1,0 +1,42 @@
+[
+  {
+    "file": "test_ambulance_agent.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_emergency_planner.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_hospital_agent.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_models.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_plan_validator.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_police_agent.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_replanner.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_route_scorer.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_signal_agent.py",
+    "exit_code": 0
+  },
+  {
+    "file": "test_traffic_agent.py",
+    "exit_code": 0
+  }
+]

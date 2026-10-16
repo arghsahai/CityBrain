@@ -1,0 +1,38 @@
+{
+  "base_commit": "c1d2c379f651dd4c66dcf68159de98e27a1f803f",
+  "branch": "feature/chennai-live-traffic",
+  "phase_a": "BLOCKED_STABILITY_REVIEW",
+  "baseline_pytest": "278 passed in 12.75s",
+  "audit_pytest": "282 passed in 14.51s",
+  "fresh_smoke": {
+    "outcome": "SUCCESS",
+    "dispatch_time": 51.0,
+    "arrival_time": 759.0,
+    "travel_time": 708.0,
+    "route_changes": 8,
+    "wall_clock_seconds": 176.75284291599928,
+    "telemetry_failures": 0,
+    "dashboard_write_failures": 0,
+    "evidence_failures": []
+  },
+  "saved_paced_wall_seconds": 255.39332266699967,
+  "provider_implementation_started": false,
+  "external_api_requests_made": false,
+  "production_code_modified": false,
+  "official_trials_regenerated": false,
+  "browser": {
+    "errors": [],
+    "status": "SUCCESS \u00b7 verified_hospital_arrival",
+    "checks": [
+      "Cesium WebGL scene",
+      "moving observed ambulance",
+      "visible vehicles and both signals",
+      "accepted route geometry",
+      "SVG fallback",
+      "replay time filtering",
+      "terminal SUCCESS",
+      "800px layout"
+    ],
+    "browser": "155.0.8059.40"
+  }
+}

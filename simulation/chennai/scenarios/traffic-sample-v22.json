@@ -1,0 +1,167 @@
+{
+  "provenance": "SYNTHETIC_SAMPLE",
+  "observations": [
+    {
+      "observation_id": "synthetic-0",
+      "provider": "SYNTHETIC",
+      "provider_segment_id": "sample-segment",
+      "road_geometry": [
+        [
+          80.17130052615333,
+          12.854883430368144
+        ],
+        [
+          80.17137521139317,
+          12.855123911038515
+        ],
+        [
+          80.17148322666058,
+          12.855429689441657
+        ],
+        [
+          80.17158267435352,
+          12.855706596913631
+        ],
+        [
+          80.17173089722557,
+          12.856088183351723
+        ],
+        [
+          80.17184133601472,
+          12.85630147003929
+        ],
+        [
+          80.17200568656737,
+          12.85628942032401
+        ]
+      ],
+      "direction": "FORWARD",
+      "retrieved_at": "2026-10-16T00:00:00+00:00",
+      "source_type": "SYNTHETIC_SAMPLE",
+      "current_speed": 5,
+      "free_flow_speed": 10.0,
+      "current_travel_time": null,
+      "free_flow_travel_time": null,
+      "congestion": 0.5,
+      "incident_type": "SAMPLE_CONGESTION",
+      "incident_description": "Synthetic demonstration, not observed Chennai traffic",
+      "observation_timestamp": "2026-10-16T00:00:00+00:00",
+      "freshness_status": "UNKNOWN",
+      "matching_status": "INSUFFICIENT_DATA",
+      "matched_sumo_edges": [],
+      "matching_confidence": null,
+      "match_reason": "Not evaluated",
+      "raw_measurements": {},
+      "quality": [],
+      "recording_provenance": null
+    },
+    {
+      "observation_id": "synthetic-1",
+      "provider": "SYNTHETIC",
+      "provider_segment_id": "sample-segment",
+      "road_geometry": [
+        [
+          80.17130052615333,
+          12.854883430368144
+        ],
+        [
+          80.17137521139317,
+          12.855123911038515
+        ],
+        [
+          80.17148322666058,
+          12.855429689441657
+        ],
+        [
+          80.17158267435352,
+          12.855706596913631
+        ],
+        [
+          80.17173089722557,
+          12.856088183351723
+        ],
+        [
+          80.17184133601472,
+          12.85630147003929
+        ],
+        [
+          80.17200568656737,
+          12.85628942032401
+        ]
+      ],
+      "direction": "FORWARD",
+      "retrieved_at": "2026-10-16T00:00:00+00:00",
+      "source_type": "SYNTHETIC_SAMPLE",
+      "current_speed": 2,
+      "free_flow_speed": 10.0,
+      "current_travel_time": null,
+      "free_flow_travel_time": null,
+      "congestion": 0.8,
+      "incident_type": "SAMPLE_CONGESTION",
+      "incident_description": "Synthetic demonstration, not observed Chennai traffic",
+      "observation_timestamp": "2026-10-16T00:03:20+00:00",
+      "freshness_status": "UNKNOWN",
+      "matching_status": "INSUFFICIENT_DATA",
+      "matched_sumo_edges": [],
+      "matching_confidence": null,
+      "match_reason": "Not evaluated",
+      "raw_measurements": {},
+      "quality": [],
+      "recording_provenance": null
+    },
+    {
+      "observation_id": "synthetic-2",
+      "provider": "SYNTHETIC",
+      "provider_segment_id": "sample-segment",
+      "road_geometry": [
+        [
+          80.17130052615333,
+          12.854883430368144
+        ],
+        [
+          80.17137521139317,
+          12.855123911038515
+        ],
+        [
+          80.17148322666058,
+          12.855429689441657
+        ],
+        [
+          80.17158267435352,
+          12.855706596913631
+        ],
+        [
+          80.17173089722557,
+          12.856088183351723
+        ],
+        [
+          80.17184133601472,
+          12.85630147003929
+        ],
+        [
+          80.17200568656737,
+          12.85628942032401
+        ]
+      ],
+      "direction": "FORWARD",
+      "retrieved_at": "2026-10-16T00:00:00+00:00",
+      "source_type": "SYNTHETIC_SAMPLE",
+      "current_speed": 8,
+      "free_flow_speed": 10.0,
+      "current_travel_time": null,
+      "free_flow_travel_time": null,
+      "congestion": 0.2,
+      "incident_type": "SAMPLE_CONGESTION",
+      "incident_description": "Synthetic demonstration, not observed Chennai traffic",
+      "observation_timestamp": "2026-10-16T00:06:40+00:00",
+      "freshness_status": "UNKNOWN",
+      "matching_status": "INSUFFICIENT_DATA",
+      "matched_sumo_edges": [],
+      "matching_confidence": null,
+      "match_reason": "Not evaluated",
+      "raw_measurements": {},
+      "quality": [],
+      "recording_provenance": null
+    }
+  ]
+}

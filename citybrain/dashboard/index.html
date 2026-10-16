@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CityBrain Live Control Center</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><div><p class="eyebrow">KRISHNA VERMA · SUMO DIGITAL TWIN</p><h1>CITYBRAIN <span>LIVE CONTROL CENTER</span></h1></div><div><strong id="clock">— s</strong><p id="mode">Waiting for evidence</p></div></header>
+<div class="bar"><span id="scenario"></span><span id="status">WAITING</span><span>READ-ONLY OBSERVABILITY</span></div>
+<div id="warning" role="status"></div>
+<section id="replay" hidden><label for="cursor">Replay simulation time</label><input id="cursor" type="range" min="0" max="900" value="0" step="1"><button id="play">Play recorded events</button><span id="cursorLabel"></span></section>
+<main><section id="demoPanel" class="card wide" hidden><h2>DEMO · Actual SUMO observations</h2><p><a href="/3d">Open interactive 3D city ↗</a></p><p id="demoLabel"></p><canvas id="demoMap" width="900" height="420"></canvas><p id="demoObservation"></p><div id="signals" class="scroll"></div><p>Red ambulance · Blue normal cars · Green H1 hospital marker. Hospital availability is synthetic. Signal colors are SUMO observations; CityBrain signal recommendations are advisory.</p></section><section class="card emergency"><h2>Emergency</h2><div id="emergency" class="facts"></div></section>
+<section class="card plan"><h2 id="planTitle">Current plan</h2><div id="plan"></div><p id="planHistory" class="note"></p><p id="route" class="route">Waiting for dispatch</p></section>
+<section class="card decision"><h2>Last planner decision <small id="decisionTime"></small></h2><strong id="decision" class="hero">—</strong><p id="reason"></p><div id="gates" class="facts"></div></section>
+<section class="card health"><h2>System health</h2><div id="health" class="facts"></div><p class="note">File updates are observations, not a runtime heartbeat. Missing fields are not inferred.</p></section>
+<section class="card wide"><h2>Candidate evaluation <small>Scores are not travel seconds</small></h2><div id="candidates" class="scroll"></div></section>
+<section class="card roads"><h2>Road state <small id="roadTime"></small></h2><div id="roads" class="scroll"></div></section>
+<section class="card events"><h2>Observed event timeline</h2><ol id="timeline"></ol></section>
+<section class="card wide"><h2>Agent outputs <small>Recommendations may reflect their recorded creation time</small></h2><div id="agents" class="agentgrid"></div></section></main>
+<footer>Synthetic SUMO environment · Signal priority is advisory only · Hardware and live-city sensing are future work</footer><script src="/app.js"></script></body></html>

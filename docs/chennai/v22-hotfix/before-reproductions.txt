@@ -1,0 +1,53 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____________ test_exact_review_40m_provider_cannot_match_10m_road _____________
+
+    def test_exact_review_40m_provider_cannot_match_10m_road():
+        row = observation(road_geometry=((.0003,0),(.0007,0)),source_type='HERE_LIVE')
+        matcher = RoadMatcher(Net([Edge('tiny',[(45,0),(55,0)])]))
+        result = matcher.match(row)
+>       assert result.matching_status == 'UNMATCHED'
+E       AssertionError: assert 'MATCHED' == 'UNMATCHED'
+E         
+E         - UNMATCHED
+E         ? --
+E         + MATCHED
+
+tests/test_chennai_traffic_coverage.py:12: AssertionError
+____________ test_exact_review_reopening_supersedes_current_closure ____________
+
+    def test_exact_review_reopening_supersedes_current_closure():
+        clock = [NOW]
+        provider = Provider(FetchResult([observation(incident_type='ROAD_CLOSURE')],'FETCHED'))
+        service = TrafficService(provider,matcher(),clock=lambda:clock[0])
+        service.poll_once()
+        clock[0] += timedelta(seconds=30)
+        provider.result = FetchResult([observation(observation_id='reopened',observation_timestamp=clock[0],incident_type=None)],'FETCHED')
+        service.poll_once()
+        rows = service.snapshot()['observations']
+>       assert len(rows) == 1 and rows[0]['observation_id'] == 'reopened'
+E       AssertionError: assert (2 == 1)
+E        +  where 2 = len([{'observation_id': 'o1', 'provider': 'TEST', 'provider_segment_id': 's1', 'road_geometry': ((0.0001, 0), (0.0009, 0))...on_id': 'reopened', 'provider': 'TEST', 'provider_segment_id': 's1', 'road_geometry': ((0.0001, 0), (0.0009, 0)), ...}])
+
+tests/test_chennai_traffic_streams.py:17: AssertionError
+__________ test_exact_review_future_timestamp_cannot_block_correction __________
+
+    def test_exact_review_future_timestamp_cannot_block_correction():
+        clock = [NOW]
+        provider = Provider(FetchResult([observation()],'FETCHED'))
+        service = TrafficService(provider,matcher(),clock=lambda:clock[0])
+        service.poll_once()
+        provider.result = FetchResult([observation(observation_id='bad-clock',observation_timestamp=NOW+timedelta(days=365))],'FETCHED')
+        service.poll_once()
+>       assert service.snapshot()['observations'][0]['observation_id'] == 'o1'
+E       AssertionError: assert 'bad-clock' == 'o1'
+E         
+E         - o1
+E         + bad-clock
+
+tests/test_chennai_traffic_clock.py:15: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_chennai_traffic_coverage.py::test_exact_review_40m_provider_cannot_match_10m_road
+FAILED tests/test_chennai_traffic_streams.py::test_exact_review_reopening_supersedes_current_closure
+FAILED tests/test_chennai_traffic_clock.py::test_exact_review_future_timestamp_cannot_block_correction
+3 failed in 0.19s

@@ -1,0 +1,65 @@
+{
+  "baseline": {
+    "terminal_outcome": "SUCCESS",
+    "dispatch_time": 51.0,
+    "arrival_time": 704.0,
+    "travel_time": 653.0,
+    "route_changes": 0,
+    "stability_guard": {
+      "confirmation_seconds": 20.0,
+      "pending": false
+    },
+    "evidence_failures": [],
+    "telemetry_failures": 0,
+    "dashboard_write_failures": 0,
+    "wall_clock_seconds": 183.69697412499954,
+    "provenance": {
+      "seed": 17,
+      "profile": "NORMAL",
+      "source": "SUMO_SIMULATED",
+      "git_commit": "4ed30b79b1ae1c8f1063fa4cd9d924762fc5cc0c",
+      "working_tree_dirty": false,
+      "inputs_sha256": {
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-gate-smoke/inputs/run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-gate-smoke/inputs/traffic.rou.xml": "c34187a759e5de8ffd78ed431f3b7d8a34f2f2b23432d0272cee8c6127e8835b"
+      },
+      "seconds_per_simulation_second": 0.0,
+      "network": "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml",
+      "soft_change_confirmation_seconds": 20.0,
+      "hospital_availability": "SIMULATED; not verified clinical capacity"
+    }
+  },
+  "initial_replay": {
+    "terminal_outcome": "SUCCESS",
+    "dispatch_time": 51.0,
+    "arrival_time": 704.0,
+    "travel_time": 653.0,
+    "route_changes": 0,
+    "stability_guard": {
+      "confirmation_seconds": 20.0,
+      "pending": false
+    },
+    "evidence_failures": [],
+    "telemetry_failures": 0,
+    "dashboard_write_failures": 0,
+    "wall_clock_seconds": 213.53234466700087,
+    "provenance": {
+      "seed": 17,
+      "profile": "NORMAL",
+      "source": "SUMO_SIMULATED",
+      "git_commit": "4ed30b79b1ae1c8f1063fa4cd9d924762fc5cc0c",
+      "working_tree_dirty": true,
+      "inputs_sha256": {
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-replay-smoke/inputs/run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+        "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/data/output/chennai/v22-replay-smoke/inputs/traffic.rou.xml": "c34187a759e5de8ffd78ed431f3b7d8a34f2f2b23432d0272cee8c6127e8835b"
+      },
+      "seconds_per_simulation_second": 0.0,
+      "network": "/Users/krishnaverma/Documents/Innovative Design Project (IDP)/Project/CityBrain/simulation/chennai/network/chennai.net.xml",
+      "soft_change_confirmation_seconds": 20.0,
+      "hospital_availability": "SIMULATED; not verified clinical capacity"
+    }
+  },
+  "comparison": "Identical observed seed-17 dispatch, arrival, travel time and accepted route; no improvement claimed. Initial replay precedes the emit-once replay cursor refinement; final replay validation is recorded separately."
+}

@@ -1,0 +1,10 @@
+{
+  "chennai.osm.xml": {
+    "expected": "3276d00790a4f4674ccc4b744da7260132be865a955a699106ce429ec3e36225",
+    "actual": "3276d00790a4f4674ccc4b744da7260132be865a955a699106ce429ec3e36225"
+  },
+  "chennai.net.xml": {
+    "expected": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+    "actual": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433"
+  }
+}

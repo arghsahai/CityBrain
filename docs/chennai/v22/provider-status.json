@@ -1,0 +1,12 @@
+{
+  "HERE": {
+    "status": "NOT_CONFIGURED",
+    "observations": 0,
+    "requests_authorized": false
+  },
+  "TOMTOM": {
+    "status": "NOT_CONFIGURED",
+    "observations": 0,
+    "requests_authorized": false
+  }
+}

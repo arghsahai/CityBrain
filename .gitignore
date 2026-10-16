@@ -21,3 +21,4 @@ data/output/
 !simulation/network/regression/city.net.xml
 experiments/results/*/
 !simulation/network/research/city.net.xml
+!simulation/chennai/network/chennai.net.xml

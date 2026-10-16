@@ -1,0 +1,14 @@
+[
+  {
+    "segment_id": "synthetic-fixture-segment-1",
+    "longitude": 80.17091077021257,
+    "latitude": 12.831367571365375,
+    "speed_mps": 5,
+    "free_flow_speed_mps": 13.89,
+    "travel_time_s": 9.088,
+    "congestion": 0.6,
+    "incident": "SYNTHETIC_ROADWORKS",
+    "provider_timestamp": "2026-10-16T00:00:00+00:00",
+    "source": "REPLAY"
+  }
+]

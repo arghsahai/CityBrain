@@ -1,0 +1,277 @@
+{
+  "base_commit": "fc9c88761c97ff5b36027b6437240da91ea9c581",
+  "implementation_commit": "6a62e932e75bc5bb45ab09c757a3c62012e0ecdf",
+  "confirmation_seconds": 20,
+  "before": {
+    "seed": 17,
+    "terminal_outcome": "SUCCESS",
+    "dispatch_time": 51.0,
+    "arrival_time": 759.0,
+    "travel_time": 708.0,
+    "physically_verified_replans": 8,
+    "future_corridor_returns": 6,
+    "unnecessary_route_changes": null,
+    "unnecessary_change_note": "Not inferable without a counterfactual; suffix returns are the measured stability proxy.",
+    "planner_evaluations": 627,
+    "evaluation_span": [
+      52.0,
+      758.0
+    ],
+    "maximum_evaluation_gap_seconds": 4.0,
+    "evaluations_per_simulation_second": 0.8881019830028328,
+    "replanning_latencies_simulation_seconds": [
+      0.0,
+      1.0,
+      0.0,
+      5.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "stability_outcomes": {},
+    "telemetry_failures": 0,
+    "dashboard_write_failures": 0,
+    "evidence_failures": [],
+    "guard_pending_at_terminal": null,
+    "disruptions": [
+      {
+        "edge": "30424374#0",
+        "speed_limit_mps": 1.0,
+        "simulation_time": 90.0,
+        "source": "SUMO_SIMULATED",
+        "reason": "Synthetic roadworks speed restriction"
+      },
+      {
+        "edge": "24160185#49",
+        "speed_limit_mps": 1.0,
+        "simulation_time": 587.0,
+        "source": "SUMO_SIMULATED",
+        "reason": "Synthetic roadworks speed restriction"
+      }
+    ],
+    "inputs": {
+      "chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+      "run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+      "traffic.rou.xml": "c34187a759e5de8ffd78ed431f3b7d8a34f2f2b23432d0272cee8c6127e8835b"
+    },
+    "wall_clock_seconds": 176.75284291599928
+  },
+  "after": [
+    {
+      "seed": 17,
+      "terminal_outcome": "SUCCESS",
+      "dispatch_time": 51.0,
+      "arrival_time": 704.0,
+      "travel_time": 653.0,
+      "physically_verified_replans": 0,
+      "future_corridor_returns": 0,
+      "unnecessary_route_changes": null,
+      "unnecessary_change_note": "Not inferable without a counterfactual; suffix returns are the measured stability proxy.",
+      "planner_evaluations": 583,
+      "evaluation_span": [
+        52.0,
+        703.0
+      ],
+      "maximum_evaluation_gap_seconds": 12.0,
+      "evaluations_per_simulation_second": 0.8955453149001537,
+      "replanning_latencies_simulation_seconds": [],
+      "stability_outcomes": {
+        "NOT_A_ROUTE_CHANGE": 537,
+        "SOFT_CHANGE_DEFERRED": 46
+      },
+      "telemetry_failures": 0,
+      "dashboard_write_failures": 0,
+      "evidence_failures": [],
+      "guard_pending_at_terminal": false,
+      "disruptions": [
+        {
+          "edge": "30424374#0",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 90.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        },
+        {
+          "edge": "30424374#8",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 210.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        }
+      ],
+      "inputs": {
+        "chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+        "run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+        "traffic.rou.xml": "c34187a759e5de8ffd78ed431f3b7d8a34f2f2b23432d0272cee8c6127e8835b"
+      },
+      "wall_clock_seconds": 188.7584430829993
+    },
+    {
+      "seed": 18,
+      "terminal_outcome": "SUCCESS",
+      "dispatch_time": 51.0,
+      "arrival_time": 705.0,
+      "travel_time": 654.0,
+      "physically_verified_replans": 0,
+      "future_corridor_returns": 0,
+      "unnecessary_route_changes": null,
+      "unnecessary_change_note": "Not inferable without a counterfactual; suffix returns are the measured stability proxy.",
+      "planner_evaluations": 576,
+      "evaluation_span": [
+        52.0,
+        704.0
+      ],
+      "maximum_evaluation_gap_seconds": 17.0,
+      "evaluations_per_simulation_second": 0.8834355828220859,
+      "replanning_latencies_simulation_seconds": [],
+      "stability_outcomes": {
+        "NOT_A_ROUTE_CHANGE": 492,
+        "SOFT_CHANGE_DEFERRED": 84
+      },
+      "telemetry_failures": 0,
+      "dashboard_write_failures": 0,
+      "evidence_failures": [],
+      "guard_pending_at_terminal": false,
+      "disruptions": [
+        {
+          "edge": "30424374#0",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 90.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        },
+        {
+          "edge": "30424374#8",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 210.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        }
+      ],
+      "inputs": {
+        "chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+        "run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+        "traffic.rou.xml": "155ca70f1803ac44942a5c86c056aa8e096b7b8bc76a1fe0df42ae1363f263d7"
+      },
+      "wall_clock_seconds": 207.87905962500008
+    },
+    {
+      "seed": 19,
+      "terminal_outcome": "SUCCESS",
+      "dispatch_time": 51.0,
+      "arrival_time": 900.0,
+      "travel_time": 849.0,
+      "physically_verified_replans": 1,
+      "future_corridor_returns": 0,
+      "unnecessary_route_changes": null,
+      "unnecessary_change_note": "Not inferable without a counterfactual; suffix returns are the measured stability proxy.",
+      "planner_evaluations": 756,
+      "evaluation_span": [
+        52.0,
+        899.0
+      ],
+      "maximum_evaluation_gap_seconds": 25.0,
+      "evaluations_per_simulation_second": 0.8925619834710744,
+      "replanning_latencies_simulation_seconds": [
+        20.0
+      ],
+      "stability_outcomes": {
+        "NOT_A_ROUTE_CHANGE": 683,
+        "SOFT_CHANGE_DEFERRED": 72,
+        "SOFT_CHANGE_CONFIRMED": 1
+      },
+      "telemetry_failures": 0,
+      "dashboard_write_failures": 0,
+      "evidence_failures": [],
+      "guard_pending_at_terminal": false,
+      "disruptions": [
+        {
+          "edge": "30424374#0",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 90.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        },
+        {
+          "edge": "30424374#8",
+          "speed_limit_mps": 1.0,
+          "simulation_time": 210.0,
+          "source": "SUMO_SIMULATED",
+          "reason": "Synthetic roadworks speed restriction"
+        }
+      ],
+      "inputs": {
+        "chennai.net.xml": "56df2c21ece2915a6c7c98c498b5f387336f73e498d7d19c30f9f280a6212433",
+        "run.sumocfg": "a05635fc0d0ec2d3d9b45a166cd916e71cb036b151e176b3fee499bade3ba02f",
+        "traffic.rou.xml": "0d75efa723cd1702ab30e413d759cbd1bb9d84f41719b657514556dd76cc15c1"
+      },
+      "wall_clock_seconds": 269.8335581249994
+    }
+  ],
+  "network_and_demand_inputs_match_seed17": true,
+  "scenario_caveat": "Scenario code unchanged, but its second restriction targets the current accepted route; realized edge/time differ between before and after. Arrival differences are observed, not an isolated causal estimate.",
+  "historical": {
+    "expected": 2172,
+    "actual": 2172,
+    "missing": [],
+    "extra": [],
+    "hash_mismatches": [],
+    "size_mismatches": []
+  },
+  "pytest": {
+    "passed": 315,
+    "seconds": 34.02
+  },
+  "physical_sumo_tests": {
+    "passed": 6,
+    "seconds": 34.76,
+    "coverage": [
+      "baseline/guarded physical divertible closure",
+      "baseline/guarded unreachable hospital",
+      "HEAVY/PEAK startup"
+    ]
+  },
+  "browser": {
+    "errors": [],
+    "status": "SUCCESS \u00b7 verified_hospital_arrival",
+    "checks": [
+      "Cesium WebGL scene",
+      "moving observed ambulance",
+      "visible vehicles and both signals",
+      "accepted route geometry matches backend",
+      "actual signal states",
+      "SVG fallback",
+      "replay time filtering",
+      "terminal SUCCESS",
+      "800px layout",
+      "guarded KEEP and unchanged accepted P0"
+    ],
+    "browser": "155.0.8059.80"
+  },
+  "external_provider_changes": false,
+  "official_trials_regenerated": false,
+  "observation_commit": "ad141eee088b1fd25044d594671418c34974b3b1",
+  "compact_dashboard_mib": {
+    "17": 70.49328422546387,
+    "18": 69.29623222351074,
+    "19": 98.21371364593506
+  },
+  "browser_seed19": {
+    "errors": [],
+    "status": "SUCCESS \u00b7 verified_hospital_arrival",
+    "checks": [
+      "Cesium WebGL scene",
+      "moving observed ambulance",
+      "visible vehicles and both signals",
+      "accepted route geometry matches backend",
+      "actual signal states",
+      "SVG fallback",
+      "replay time filtering",
+      "terminal SUCCESS",
+      "800px layout"
+    ],
+    "accepted_replan_checked": 251,
+    "browser": "155.0.8059.80"
+  }
+}
