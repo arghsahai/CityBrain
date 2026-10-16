@@ -8,6 +8,8 @@ let follow = false, fallbackMode = false, imageryOn = false, lastWall = performa
 const vehicles = new Map(), roads = new Map(), signals = new Map();
 let routeEntity, previousRoute = '', homePosition;
 const C = window.Cesium;
+let selectedTrafficRoad = '';
+const externalEntities = new Map();
 
 function notice(text) { show('notice', text); }
 function home() {
@@ -36,6 +38,7 @@ function initializeCesium() {
   viewer.scene.globe.enableLighting = false;
   viewer.targetFrameRate = 30;
   viewer.selectedEntityChanged.addEventListener(entity=>{
+    if(entity?.id?.startsWith('road:')) {selectedTrafficRoad=entity.id.slice(5);if(latest)renderTrafficPanel(latest);}
     if(entity)notice(entity.name+' · '+(entity.description?.getValue(viewer.clock.currentTime) || 'OSM geometry'));
   });
   viewer.scene.renderError.addEventListener((_scene,error)=>{
@@ -137,6 +140,7 @@ function renderMap(state) {
     entity.description=safeDescription(`${obs.source} · ${obs.timestamp} · accuracy ${obs.accuracy_m} m. Synthetic recorded feed; not a live tracked vehicle.`);
   }
   for(const entity of [...viewer.entities.values]) if(entity.id.startsWith('gps:') && !(frame.gps || []).some(obs=>'gps:'+obs.vehicle_id===entity.id))viewer.entities.remove(entity);
+  renderTrafficOverlay(frame);
   viewer.scene.requestRender();
 }
 
@@ -153,8 +157,54 @@ function renderFallback(state) {
   for(const v of state.chennai?.vehicles || []) dot(v.longitude,v.latitude,v.category==='ambulance'?7:2,v.category==='ambulance'?'#ff6475':'#8db7ea',v.category==='ambulance'?'AMBULANCE':null);
   for(const h of state.chennai?.hospitals || [])dot(h.longitude,h.latitude,6,'#61d6b5','H · '+h.name);
   for(const s of state.chennai?.signals || [])dot(s.longitude,s.latitude,5,s.state.includes('G')?'#68e3b3':s.state.includes('y')?'#ffce73':'#ff6475');
+  for(const obs of state.chennai?.external?.observations || []) {
+    if(obs.road_geometry.length<2)continue;
+    path(obs.road_geometry,obs.freshness_status==='FRESH'?'#d48cfa':'#9ca6b4',3);
+    if(obs.incident_type)dot(...obs.road_geometry[0],6,'#ffd166',obs.source_type+' · '+obs.incident_type);
+  }
   dot(80.154,12.8408,4,'#b9edf0','VIT CHENNAI');
   dot(80.170,12.829,5,'#f6a75a','INCIDENT');
+}
+
+function renderTrafficOverlay(frame) {
+  const present=new Set();
+  for(const obs of frame.external?.observations || []) {
+    if(obs.road_geometry.length<2)continue;
+    const id='external-flow:'+obs.provider+':'+obs.provider_segment_id;
+    present.add(id);
+    let entity=externalEntities.get(id);
+    if(!entity){entity=viewer.entities.add({id,name:obs.source_type+' · '+obs.provider_segment_id,polyline:{positions:[],width:5}});externalEntities.set(id,entity);}
+    entity.polyline.positions=line(obs.road_geometry,12);
+    entity.polyline.material=new C.PolylineDashMaterialProperty({color:C.Color.fromCssColorString(obs.freshness_status==='FRESH'?'#d48cfa':'#9ca6b4'),dashLength:18});
+    entity.description=safeDescription(`${obs.source_type} · ${obs.freshness_status} · ${obs.matching_status} · ${obs.match_reason} · ${num(obs.current_speed)} m/s · Advisory only`);
+    if(obs.incident_type){
+      const incidentId='external-incident:'+id;present.add(incidentId);
+      const [lon,lat]=obs.road_geometry[Math.floor(obs.road_geometry.length/2)];
+      const markerEntity=marker(incidentId,lon,lat,obs.source_type+' · '+obs.incident_type,'#ffd166');
+      markerEntity.position=position(lon,lat,15);
+      markerEntity.description=safeDescription(`${obs.incident_description || obs.incident_type} · ${obs.freshness_status} · ${obs.matching_status}`);
+      externalEntities.set(incidentId,markerEntity);
+    }
+  }
+  for(const [id,entity] of externalEntities)if(!present.has(id)){viewer.entities.remove(entity);externalEntities.delete(id);}
+}
+
+function renderTrafficPanel(state) {
+  const external=state.chennai?.external || {}, observations=external.observations || [];
+  show('traffic-status',`${external.provider || 'Unavailable'} · ${external.display_status || external.status || 'UNAVAILABLE'} · ${external.match_status || 'NO VERIFIED ROAD MATCHES'} · ${external.source || 'UNAVAILABLE'}`);
+  show('traffic-counts',`${external.observation_count || observations.length} observations · ${external.matched_roads || 0} matched roads · ${external.unmatched_records || 0} unmatched · ${external.stale_records || 0} STALE / EXPIRED · ${external.unknown_time_records || 0} UNKNOWN time`);
+  const ages=observations.map(o=>o.age_seconds).filter(v=>typeof v==='number');
+  show('traffic-time',`Last successful fetch: ${external.last_update || 'UNAVAILABLE'} · Source age: ${ages.length?num(Math.max(...ages))+' s':'UNKNOWN'} · Coverage bounds: ${pretty(external.coverage_area)} · HERE / TomTom coverage unverified unless authorized and measured`);
+  show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0}`);
+  const ids=[...new Set(observations.flatMap(o=>o.matched_sumo_edges || []))];
+  if(selectedTrafficRoad && !ids.includes(selectedTrafficRoad))ids.unshift(selectedTrafficRoad);
+  if(!selectedTrafficRoad)selectedTrafficRoad=ids[0] || '';
+  $('traffic-road').replaceChildren(...(ids.length?ids:['']).map(id=>{const option=document.createElement('option');option.value=id;option.textContent=id || 'NO VERIFIED ROAD MATCHES';option.selected=id===selectedTrafficRoad;return option;}));
+  const rows=[['SUMO edge ID',selectedTrafficRoad || 'UNAVAILABLE'],['SUMO_SIMULATED speed',num(state.chennai?.roads[selectedTrafficRoad]?.speed)+' m/s']];
+  const selected=observations.filter(o=>o.matching_status==='MATCHED' && o.matched_sumo_edges.includes(selectedTrafficRoad));
+  for(const o of selected)rows.push(['Provider segment',o.provider_segment_id],['Data source',o.source_type],['External speed',num(o.current_speed)+' m/s'],['Free-flow speed',num(o.free_flow_speed)+' m/s'],['Reported congestion',num(o.congestion,2)],['Source timestamp',o.observation_timestamp || 'UNKNOWN'],['Quality',o.freshness_status+' · '+o.matching_status],['Match reason',o.match_reason]);
+  if(!selected.length)rows.push(['External traffic','UNAVAILABLE — NO VERIFIED ROAD MATCHES']);
+  table('traffic-comparison',['Measurement','Value'],rows);
 }
 
 function table(target, headers, rows) {
@@ -165,6 +215,7 @@ function table(target, headers, rows) {
   $(target).replaceChildren(el);
 }
 function renderPanel(state) {
+  renderTrafficPanel(state);
   const frame=state.chennai, plan=state.plan, ambulance=frame?.vehicles.find(v=>v.id===frame.ambulance_id);
   const hospital=frame?.hospitals.find(h=>h.id===state.hospital);
   show('status',state.terminal?.outcome || (frame?'RUNNING':'WAITING FOR TELEMETRY'));
@@ -221,6 +272,7 @@ async function update() {
   } catch(error) {notice('Data unavailable: '+error.message);show('status','DISCONNECTED');}
   finally{busy=false;}
 }
+$('traffic-road').onchange=()=>{selectedTrafficRoad=$('traffic-road').value;if(latest)renderTrafficPanel(latest);};
 $('home').onclick=home;
 $('follow').onclick=()=>{follow=!follow;$('follow').classList.toggle('active',follow);if(latest)renderMap(latest);};
 $('flat').onclick=()=>{if(!viewer){notice('WebGL unavailable; 2D fallback remains active.');return;}activateFallback(!fallbackMode);};

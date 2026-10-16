@@ -1,4 +1,6 @@
 """Local GET-only Chennai viewer, reusing the validated dashboard reducer."""
+from copy import deepcopy
+from datetime import datetime, timezone
 import json
 import math
 import mimetypes
@@ -51,6 +53,35 @@ class FrameReader:
         return next((frame for frame in reversed(self.frames) if frame['simulation_time'] <= timestamp), None)
 
 
+def presentation_frame(frame, replay=False, now=None):
+    """Do not mutate stored evidence or relabel an archived API response as live."""
+    if not frame or not frame.get('external'):
+        return frame
+    frame = dict(frame)
+    external = frame['external'] = deepcopy(frame['external'])
+    rows = external.get('observations',[])
+    if replay:
+        external['display_status'] = 'REPLAY'
+        external['status'] = 'REPLAY'
+        external['original_source'] = external.get('source')
+        external['source'] = 'SYNTHETIC_SAMPLE' if external.get('source')=='SYNTHETIC_SAMPLE' else 'REPLAY'
+        for row in rows:
+            if row.get('source_type') in {'HERE_LIVE','TOMTOM_LIVE'}:
+                row['recorded_source_type'] = row['source_type']
+                row['source_type'] = 'REPLAY'
+    else:
+        from citybrain.chennai.traffic.freshness import FreshnessPolicy
+        policy = FreshnessPolicy(**external.get('freshness_policy',{}))
+        for row in rows:
+            if row.get('source_type') in {'HERE_LIVE','TOMTOM_LIVE'}:
+                status,age,problem = policy.classify(row.get('observation_timestamp'),now or datetime.now(timezone.utc))
+                row.update(freshness_status=status,age_seconds=age,time_quality=problem)
+        external['stale_records'] = sum(r.get('freshness_status') in {'STALE','EXPIRED'} for r in rows)
+        if external.get('display_status')=='LIVE DATA' and not any(r.get('freshness_status')=='FRESH' and r.get('matching_status')=='MATCHED' for r in rows):
+            external['display_status'] = 'STALE / EXPIRED / UNKNOWN'
+    return frame
+
+
 def make_server(directory, port=8770, replay=False):
     directory = Path(directory).resolve()
     reader = EvidenceReader(directory/'dashboard.jsonl')
@@ -68,7 +99,7 @@ def make_server(directory, port=8770, replay=False):
                         raise ValueError('Invalid replay timestamp')
                     with lock:
                         state = reader.snapshot(replay=replay, at=at, scenario='CHENNAI — synthetic demand on OSM roads')
-                        frame = frames.at(at)
+                        frame = presentation_frame(frames.at(at),replay=replay)
                         state.update(chennai=frame, telemetry_error=frames.error,
                             telemetry_max_time=frames.frames[-1]['simulation_time'] if frames.frames else 0,
                             playback='REPLAY' if replay else 'LIVE_OBSERVATION')
