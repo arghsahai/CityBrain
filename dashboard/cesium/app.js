@@ -320,11 +320,15 @@ function renderPanel(state) {
   show('queues',frame?Object.values(frame.roads).reduce((a,r)=>a+r.queue,0):null);
   show('emergency-state',state.terminal?.outcome || (plan?'DISPATCHED':'WAITING'));
   show('ambulance-id',frame?.ambulance_id || 'Waiting for ambulance dispatch');
+  const inactiveTerminal=Boolean(state.terminal && !ambulance);
+  $('terminal-vehicle').hidden=!inactiveTerminal;
+  show('terminal-vehicle',inactiveTerminal?`${state.terminal.outcome} · No active SUMO vehicle. The accepted route is recorded history; no current vehicle position is shown.`:'');
+  $('follow').disabled=!ambulance;
   const kv=[['Speed',ambulance?num(ambulance.speed*3.6)+' km/h':'UNAVAILABLE'],
     ['Location',ambulance?`${num(ambulance.latitude,5)}, ${num(ambulance.longitude,5)}`:'UNAVAILABLE'],
     ['Current road',ambulance?.road],['Hospital',hospital?.name || state.hospital],
     ['Plan ETA',plan?num(plan.eta)+' s · estimate at acceptance':'UNAVAILABLE'],
-    ['Response time',state.terminal?.metrics.travel_time != null?num(state.terminal.metrics.travel_time)+' simulation s':'UNAVAILABLE'],
+    ['Travel time',state.terminal?.metrics.travel_time != null?num(state.terminal.metrics.travel_time)+' simulation s':'UNAVAILABLE'],
     ['Arrival',state.terminal?.metrics.arrival_time != null?num(state.terminal.metrics.arrival_time)+' simulation s':'UNAVAILABLE'],
     ['Observation',frame?num(frame.simulation_time,0)+' s · SUMO_SIMULATED':'UNAVAILABLE']];
   $('ambulance').replaceChildren(...kv.flatMap(pair=>pair.map(text=>{const span=document.createElement('span');span.textContent=text??'UNAVAILABLE';return span;})));
@@ -366,6 +370,7 @@ async function update() {
     replay=latest.playback==='REPLAY';
     $('replay-controls').hidden=!replay;
     if(replay){$('seek').max=latest.telemetry_max_time; if(firstReplay){replayAt=1;playing=true;} $('seek').value=replayAt;}
+    $('play').textContent=playing?'Pause replay':'Play replay';
     renderPanel(latest);renderMap(latest);renderDeviceLocation();
   } catch(error) {notice('Data unavailable: '+error.message);show('status','DISCONNECTED');}
   finally{busy=false;}

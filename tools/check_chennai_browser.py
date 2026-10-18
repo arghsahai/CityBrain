@@ -107,8 +107,11 @@ def main():
             # reviewer's actual device coordinates or contacting a service.
             page.add_init_script("""Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition:(ok,fail)=>{window.__gpsOk=ok;window.__gpsFail=fail;return 7;},clearWatch:()=>{window.__gpsCleared=true;}}});""")
         errors=[]
+        local_http_errors=[]
         location_scenarios=[]
         page.on('pageerror',lambda error:errors.append(str(error)))
+        page.on('response',lambda response:local_http_errors.append(dict(url=response.url,status=response.status))
+                if response.url.startswith(args.url) and response.status>=400 else None)
         page.goto(args.url,wait_until='domcontentloaded')
         expect(page.locator('#mode')).to_contain_text('REPLAY',timeout=60000)
         terminal_time=page.request.get(args.url+'/api/state').json()['telemetry_max_time']
@@ -125,6 +128,8 @@ def main():
         page.locator('#seek').fill('200')
         page.locator('#seek').dispatch_event('input')
         expect(page.locator('#time')).to_have_text('200 s',timeout=30000)
+        expect(page.locator('#play')).to_have_text('Play replay')
+        expect(page.locator('header')).not_to_contain_text('V3.0')
         page.wait_for_timeout(1500)
         assert not page.locator('#fallback').is_visible(),page.locator('#notice').inner_text()
         assert page.evaluate('Boolean(viewer && viewer.scene.canvas && !fallbackMode)')
@@ -222,9 +227,17 @@ def main():
         page.locator('#seek').fill(f'{terminal_time:g}')
         page.locator('#seek').dispatch_event('input')
         expect(page.locator('#outcome')).to_contain_text('SUCCESS',timeout=30000)
+        expect(page.locator('#terminal-vehicle')).to_contain_text('No active SUMO vehicle')
+        expect(page.locator('#follow')).to_be_disabled()
+        expect(page.locator('#ambulance')).to_contain_text('Travel time')
+        expect(page.locator('#play')).to_have_text('Play replay')
         page.set_viewport_size({'width':800,'height':1000})
         page.wait_for_timeout(1200)
         page.screenshot(path=str(args.output/'tablet.png'))
+        page.set_viewport_size({'width':390,'height':844})
+        page.wait_for_timeout(500)
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'), '390px horizontal overflow'
+        page.screenshot(path=str(args.output/'phone.png'))
         if args.traffic:
             # Presentation-only synthetic UI cases; not provider/API evidence.
             frame=page.request.get(args.url+'/api/state?at=220').json()
@@ -256,7 +269,9 @@ def main():
         closure_states = (assert_closure_transitions(page,
             page.request.get(args.url+'/api/state?at=220').json(),args.output) if args.closure_hotfix else [])
         assert not errors,errors
+        assert not local_http_errors,local_http_errors
         result=dict(errors=errors,status=page.locator('#outcome').inner_text(),
+            local_http_errors=local_http_errors,
             checks=['Cesium WebGL scene','moving observed ambulance','visible vehicles and both signals',
                     'accepted route geometry matches backend','actual signal states','SVG fallback',
                     'replay time filtering','terminal SUCCESS','800px layout']+
