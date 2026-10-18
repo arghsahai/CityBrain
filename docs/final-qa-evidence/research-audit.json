@@ -1,0 +1,55 @@
+{
+  "trials": 60,
+  "counts": {
+    "S05/static": {
+      "successes": 7,
+      "teleports": 3
+    },
+    "S05/dynamic": {
+      "successes": 10,
+      "teleports": 0
+    },
+    "S06/static": {
+      "successes": 0,
+      "teleports": 10
+    },
+    "S06/dynamic": {
+      "successes": 0,
+      "teleports": 10
+    },
+    "S08/static": {
+      "successes": 0,
+      "teleports": 10
+    },
+    "S08/dynamic": {
+      "successes": 10,
+      "teleports": 0
+    }
+  },
+  "paired": {
+    "S05": {
+      "successful_pairs": 7,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": 0.0,
+      "response_median_difference": 0.0,
+      "response_difference_bootstrap95": [
+        0.0,
+        0.0
+      ]
+    },
+    "S06": {
+      "successful_pairs": 0,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": null,
+      "response_median_difference": null,
+      "response_difference_bootstrap95": null
+    },
+    "S08": {
+      "successful_pairs": 0,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": null,
+      "response_median_difference": null,
+      "response_difference_bootstrap95": null
+    }
+  }
+}

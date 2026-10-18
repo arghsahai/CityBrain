@@ -1,0 +1,28 @@
+{
+  "public_documentation_only": true,
+  "provider_data_api_requests": 0,
+  "web_documentation_opened": [
+    "SUMO overview",
+    "TraCI",
+    "Cesium Scene",
+    "HERE flow contract",
+    "TomTom flow contract"
+  ],
+  "direct_reference_checks": [
+    {
+      "url": "https://www.openstreetmap.org/copyright",
+      "status": "UNVERIFIED",
+      "error": "URLError"
+    },
+    {
+      "url": "https://cesium.com/learn/cesiumjs-learn/cesiumjs-creating-entities/",
+      "status": "UNVERIFIED",
+      "error": "URLError"
+    }
+  ],
+  "subsequent_web_verification": {
+    "OSM": "https://www.openstreetmap.org/copyright/en",
+    "Cesium entities": "https://cesium.com/learn/cesiumjs-learn/cesiumjs-creating-entities/",
+    "status": "Both pages opened successfully through web tool; canonical OSM /copyright link retained."
+  }
+}

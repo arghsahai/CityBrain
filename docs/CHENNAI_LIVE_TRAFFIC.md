@@ -90,6 +90,38 @@ match until a directional reference (for example validated decoded OpenLR) is ad
 This is an explicit limitation, not an invented heading or a real coverage result.
 A geometry fingerprint is used when OpenLR is absent.
 
+## Published account and coverage limits (checked 18 October 2026)
+
+- HERE's public Limited Plan page states a limit of 1,000 requests per day for
+  customers without payment information. Its public RPS table lists limits for
+  selected services but no Traffic API RPS number. HERE documents 429/503 quota
+  and throttling responses; transient throttling can also happen before quota is
+  reached. Account plan and requested features affect billing; `deepCoverage` is
+  separately priced. A continuously authorized 60-second runtime poll can exceed
+  the published Limited Plan daily request count, so check the account limit before
+  enabling it.
+- TomTom's current public pricing page lists 20,000 monthly free requests for
+  Flow Segment Data followed by usage-based tiers; account terms set actual costs.
+  Polling every 60 seconds continuously is about 43,200 requests per 30-day month.
+  The runtime honors `Retry-After`; the public page does not establish this account's
+  per-second quota or VIT corridor request budget.
+- TomTom's official market table lists India as supported for Traffic Flow and
+  Incidents. This country-level availability does not establish Chennai, VIT,
+  all road classes, both directions, or emergency-route coverage.
+- HERE's Flow endpoint returns measurements within a requested area, but its
+  contract does not guarantee that every road has a measurement. Neither provider's
+  live accuracy, freshness latency, licensing rights or exact Chennai segment
+  coverage has been verified by this project.
+- TomTom documentation recommends Orbis APIs for new integrations. This adapter
+  continues to use the Maps v4 endpoint and needs a separately tested migration.
+
+Official references: [HERE Flow API](https://docs.here.com/traffic-api/reference/traffic-api-v7-getflow),
+[HERE Limited Plan request limits](https://www.here.com/get-started/pricing/rps-limits-excluded-use-cases),
+[HERE Flow semantics](https://docs.here.com/traffic-api/docs/flow),
+[TomTom v4 Flow Segment Data](https://docs.tomtom.com/traffic-api/documentation/tomtom-maps/v1/traffic-flow/flow-segment-data),
+[TomTom Market Coverage](https://docs.tomtom.com/traffic-api/documentation/tomtom-maps/v1/product-information/market-coverage),
+[TomTom pricing](https://docs.tomtom.com/pricing).
+
 ## Authorization, failures and configuration
 
 Credentials absent: `NOT_CONFIGURED`. Credentials present with authorization off:
@@ -236,6 +268,22 @@ source separately. Kept-open genuine provider observations age at GET time.
 SUMO signals remain simulated and all recommendations advisory.
 
 ## Commands and verification
+
+The non-networking readiness command never reads or displays key values:
+
+```sh
+venv/bin/python tools/verify_traffic_provider.py --provider here
+venv/bin/python tools/verify_traffic_provider.py --provider tomtom
+```
+
+These report `NOT_CONFIGURED` or `CONFIGURED_NOT_VERIFIED`. To make exactly one
+real request in a future, separately authorized check, use
+`venv/bin/python tools/verify_traffic_provider.py --provider here --authorize-live-request`
+(or `tomtom`). This opt-in command may incur charges. It reports a provider as
+`VERIFIED` only after a genuine successful response with fresh source timestamps;
+stale data reports `STALE`, unknown source time reports `UNKNOWN`, and errors
+report their safe category. This implementation did not execute the live-request
+command. Mocked and replay observations cannot verify provider connectivity.
 
 ```sh
 # Existing default remains simulation-only:

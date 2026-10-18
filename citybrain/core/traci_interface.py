@@ -6,6 +6,7 @@ for runtime operations.
 """
 
 from typing import Dict, List, Tuple
+import math
 
 
 class TraCIInterface:
@@ -105,7 +106,7 @@ class TraCIInterface:
         return list(self.traci.trafficlight.getIDList())
 
     def signal_state(self, signal_id: str) -> dict:
-        return {
+        state = {
             "signal_id": signal_id,
             "phase": self.traci.trafficlight.getPhase(
                 signal_id
@@ -117,6 +118,25 @@ class TraCIInterface:
                 signal_id
             ),
         }
+        # SUMO exposes the programmed next switch. Keep timing unavailable when
+        # the backend cannot provide a finite, internally consistent value.
+        try:
+            now = float(self.traci.simulation.getTime())
+            next_switch = float(self.traci.trafficlight.getNextSwitch(signal_id))
+            duration = float(state['phase_duration'])
+            remaining = next_switch - now
+            if all(map(math.isfinite, (now, next_switch, duration))) and duration >= 0 and remaining >= 0:
+                elapsed = duration - remaining
+                state.update(phase_start_time=now-elapsed if elapsed >= 0 else None,
+                             phase_elapsed_seconds=elapsed if elapsed >= 0 else None,
+                             remaining_phase_seconds=remaining)
+            else:
+                state.update(phase_start_time=None, phase_elapsed_seconds=None,
+                             remaining_phase_seconds=None)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            state.update(phase_start_time=None, phase_elapsed_seconds=None,
+                         remaining_phase_seconds=None)
+        return state
 
     def geographic_observations(self) -> dict:
         """Read-only geographical observations on Core's existing connection.

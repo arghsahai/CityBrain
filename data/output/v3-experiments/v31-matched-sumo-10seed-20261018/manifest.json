@@ -1,0 +1,63 @@
+{
+  "signature": {
+    "scenarios": [
+      "S05",
+      "S06",
+      "S08"
+    ],
+    "profiles": [
+      "normal"
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "input_sha256": "e93370007c8d31679f34d29c29cf1e71384e5301d6fba962c05c386fc56c0489",
+    "horizon_seconds": 900,
+    "sumo_version": "Eclipse SUMO sumo 1.27.1"
+  },
+  "git_commit": "08e5ac8b110dd22f28bb5af9225289f855f38623",
+  "evaluation_interval_seconds": 1,
+  "commitment_seconds": 10,
+  "benefit_seconds": 5,
+  "benefit_fraction": 0.15,
+  "initial_signature": {
+    "scenarios": [
+      "S05",
+      "S06",
+      "S08"
+    ],
+    "profiles": [
+      "normal"
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "input_sha256": "f52cdc9b170fefde0499bda1e94744c523ee4ad31c6b5fdaaf79319970bd9fed",
+    "horizon_seconds": 900,
+    "sumo_version": "Eclipse SUMO sumo 1.27.1"
+  },
+  "aggregation_amendment": {
+    "from_revision": "08e5ac8b110dd22f28bb5af9225289f855f38623",
+    "runner_fix_revision": "9e1a9be610f3172c5185b61f4caad063c8309cb4",
+    "previous_input_sha256": "f52cdc9b170fefde0499bda1e94744c523ee4ad31c6b5fdaaf79319970bd9fed",
+    "reason": "Scenario-specific S08 columns caused first CSV aggregation failure; trial generation and saved checkpoints are retained."
+  }
+}

@@ -1,147 +1,119 @@
-# CityBrain SUMO experiments
+# CityBrain
 
-**Team setup, latest live 3D demo and ready-to-play saved demo:** [Team quick start](docs/krishna/TEAM_QUICKSTART.md).
+**AI-Based Emergency Response Coordination and Dynamic Traffic Recalculation Using a Digital Twin**
 
-Current scope: **software + SUMO digital twin only**. The research PDF is architectural and research context, not the current implementation specification. Hardware-in-loop, real cameras, ESP32, edge devices, GPS, physical signals, real drones and live traffic feeds are future work.
+CityBrain is a university research software prototype for observing simulated traffic, coordinating an ambulance response, reassessing routes and verifying route execution. It combines an OSM-derived Chennai study corridor, SUMO microscopic simulation, CityBrain Core and specialized agents, an existing planner/validator, and a Cesium/SVG dashboard.
 
-Krishna owns `simulation/` and `experiments/`. The experiment runner uses a TraCI dictionary adapter and main’s unchanged EmergencyPlanner and Replanner. Argh’s core integration remains a separate dependency. It does not replace teammate agents or routing architecture. This integration branch starts from team main; the independently rooted Krishna branch remains a historical reference. See docs/INTEGRATION.md for the port decisions.
+A route may become unsuitable after dispatch. CityBrain evaluates the remaining route, applies a validated replacement through TraCI when justified, and reads the physical route back from SUMO before logical acceptance. A 20-second Chennai confirmation guard limits soft-change churn; confirmed hard invalidations retain immediate handling.
+
+**Current completion evidence:** [Final project status](docs/FINAL_PROJECT_STATUS.md) · [Demo readiness](docs/FINAL_DEMO_READINESS.md) · [Academic submission package](deliverables/final-academic-submission/).
+
+## What is implemented
+
+- Chennai-area OSM road geometry and geographic projection, SUMO background vehicles, ambulance movement, simulated incidents, configured hospitals and signal telemetry.
+- Shared CityState, Traffic/Ambulance/Hospital/Police/Signal agent assessments, EmergencyPlanner, RouteScorer, PlanValidator and ReplanningPolicy.
+- Verified route execution, exact active-suffix read-back, failure recovery and terminal cleanup. Teleports and unexplained disappearance do not count as successful arrival.
+- Cesium visualization, SVG/2D fallback, replay controls, route/vehicle alignment, source/freshness labels and a consented tab-local location marker.
+- HERE/TomTom adapters and synthetic traffic replay. The opt-in advisor is display-only and cannot change planner costs, trigger production replanning or commit routes.
+- Preserved research evidence, including the original 180 trials and the separate V3.1 60-cell matched SUMO study.
+
+```mermaid
+flowchart LR
+  OSM[OSM-derived roads] --> SUMO[SUMO simulation]
+  SUMO --> CORE[TraCI / Core / CityState]
+  CORE --> AGENTS[Agent assessments]
+  AGENTS --> PLAN[Planner + validation + stability policy]
+  PLAN --> EXEC[RouteExecutor + exact read-back]
+  EXEC --> SUMO
+  CORE --> TELE[Failure-isolated telemetry]
+  TELE --> VIEW[Cesium / SVG dashboard]
+  EXT[Provider adapters / synthetic replay] --> MATCH[Normalization + directed matching + freshness]
+  MATCH --> ADVICE[Opt-in display-only advisor]
+  ADVICE --> VIEW
+```
+
+Road geography is OSM-derived. Traffic, demand, incidents, signals and hospital availability are simulated. Police recommendations are logical advisories, not physical police dispatch. Signal recommendations are not actuated. No genuine HERE/TomTom response or live Chennai coverage is verified. SUCCESS means arrival at a configured simulated hospital access road, not clinical admission or driveway validation.
 
 ## Setup
 
-Install Eclipse SUMO (tested with 1.27.1) and Python dependencies:
+Final QA used **Python 3.13.5, SUMO 1.27.1 and Chrome 155 on macOS**. Install SUMO separately and ensure `sumo` is on PATH (or configure `SUMO_HOME` and PATH). A WebGL-capable browser supports 3D; SVG/2D works as a fallback. No credentials, paid API or cloud account is needed.
+
+These shell commands are for macOS/Linux from the repository root; the POSIX launcher was tested on macOS. Windows was not exercised in final QA. The Python modules are available after configuring Python and SUMO, but no untested Windows setup is claimed. The safe archive-extraction command below requires Python 3.12+.
 
 ```sh
 python3 -m venv venv
-source venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install -r experiments/requirements-analysis.txt
+venv/bin/python -m pip install -r requirements-chennai.txt
+venv/bin/python -c "import sumolib, traci, pyproj"
+sumo --version
 ```
 
-Run commands from the repository root. `sumolib.checkBinary` selects `sumo`, `sumo-gui` and `netconvert` portably; install SUMO on PATH or configure SUMO_HOME. GUI is optional (`--gui`).
+See [setup details](docs/V3_SETUP.md) and [troubleshooting](docs/V3_TROUBLESHOOTING.md). The checked-in Chennai network is used; no OSM download or provider request is needed for the demo.
 
-## Reproduce experiments
+## Demo A — normal Chennai response
 
 ```sh
-python -m experiments.runners.compare --scenarios S05 --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/my-s05
-python -m experiments.runners.compare --scenarios S07 --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/my-congestion
-python -m experiments.runners.compare --scenarios S01 S02 S03 S04 S05 S06 S07 --profiles normal heavy peak congested --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/my-suite
-python -m experiments.analysis.summarize experiments/results/my-s05/results.csv
-python -m experiments.analysis.charts experiments/results/my-s05/results.csv
-python -m unittest discover -s tests -v
-python -m simulation.tools.check_signals
-python -m simulation.tools.build_network --output /tmp/citybrain-rebuilt.net.xml
+./tools/run_chennai.sh --mode simulation --seed 17
 ```
 
-Each comparison executes static then dynamic trials with identical SUMO inputs and seed. The static strategy applies one initial plan; dynamic evaluation runs every simulated second, skipping internal intersection edges until a route can be safely applied. Use a fresh output directory for a new experiment. `--resume` accepts an existing directory only when execution code, SUMO inputs, version, seeds and scenario/profile lists match its manifest. Completed trial checkpoints, including ERROR outcomes, are retained; incomplete trials restart. CSV snapshots and JSON checkpoints are written atomically. Infrastructure errors are recorded as ERROR and the suite continues; interruption remains interruptible. The full suite is 560 simulations; smoke-check a small subset first. `experiments/configs/suite.json` records the reference suite and policy parameters; the commands above are the execution interface.
+Open the printed URL (default `http://127.0.0.1:8770`). Observe the simulated emergency, dispatch, accepted P0, moving ambulance, hospital and signals. The verified seed-17 run reaches SUCCESS at **704 simulation seconds**: dispatch 51 s, travel 653 s, **zero route changes**. This is a successful-response demo, not evidence of an applied replan. The default pace takes about four minutes. Ctrl-C closes the launcher and its child connection/server.
 
-Every trial saves generated route/config files, `result.json`, explainable `events.json`, edge measurements every 10 seconds in `edges.csv`, and SUMO `tripinfo.xml`. The suite saves a CSV, Markdown summary, statistics CSV and input manifest with SUMO version, Git commit, execution/input hash and policy values. The hash captures uncommitted execution code too; analysis and documentation are excluded. Generate charts separately. Large raw artifacts should remain local; retain compact research CSVs and summaries in Git.
-
-## Network and signals
-
-The bidirectional 3×3 grid has J1–J3 on the bottom row, J4–J6 on the middle row and J7–J9 on the top row; junction spacing is 100 m, with one lane per directed edge at 13.9 m/s.
-
-| Edge pair | Forward connection | Reverse connection |
-|---|---|---|
-| E1 / E2 | J1 → J2 | J2 → J1 |
-| E3 / E4 | J2 → J3 | J3 → J2 |
-| E5 / E6 | J4 → J5 | J5 → J4 |
-| E7 / E8 | J5 → J6 | J6 → J5 |
-| E9 / E10 | J7 → J8 | J8 → J7 |
-| E11 / E12 | J8 → J9 | J9 → J8 |
-| E13 / E14 | J1 → J4 | J4 → J1 |
-| E15 / E16 | J4 → J7 | J7 → J4 |
-| E17 / E18 | J2 → J5 | J5 → J2 |
-| E19 / E20 | J5 → J8 | J8 → J5 |
-| E21 / E22 | J3 → J6 | J6 → J3 |
-| E23 / E24 | J6 → J9 | J9 → J6 |
-
-All nine junctions expose traffic-light state, controlled links and phase changes through TraCI. The check tool changes to the next phase, verifies it and restores the original phase before advancing simulation. It does not implement SignalAgent or a green corridor. The committed network and its header use netconvert's automatically generated signals. The incompatible legacy `city.tll.xml` was not ported. Main’s original network/config/routes remain at their original paths. Rebuild from `simulation/network/regression/city.nod.xml` and `simulation/network/regression/city.edg.xml`, preserving the same SUMO version for comparisons.
-
-## Demand and scenarios
-
-Background traffic derives from the existing S05 flows (450, 250, 500 and 200 vehicles/hour). Normal/heavy/peak/congested multiply demand by 1/1.5/2/3. These are controlled synthetic profiles, not calibrated city demand. S03 imposes at least heavy demand. Flow insertion may be delayed by queues; throughput measures actual arrivals, not requested demand.
-
-| Scenario | Conditions |
-|---|---|
-| S01 | Background traffic only; emergency outcome is NOT_APPLICABLE |
-| S02 | E3 accident vehicle and ambulance depart at 300 s |
-| S03 | S02 with at least 1.5× background demand |
-| S04 | E7 blocker departs at 295 s, before emergency dispatch |
-| S05 | E3 accident at 300 s, E7 blocker departs at 307 s |
-| S06 | S05 plus E11 blocker departs at 310 s; single emergency with two changes |
-| S07 | E3 accident plus moving 3 m/s traffic entering E7→E23 at 1800 veh/h from 305–450 s; E7 is not explicitly blocked |
-
-The runner builds scenario variants from the existing S05 XML, preserving the existing S02 and S05 files. Demand records are chronologically sorted. An edge becomes logically blocked only when its scenario blocker is present and stopped. Nominal departure is not the same as physical stop/detection time. Ambulance0 uses SUMO's emergency vehicle class with no blue-light device or collision/teleport bypass. H1 at J9 is the existing logical hospital destination. Police allocation remains the existing agent's logical response; a physical police dispatch and simultaneous multi-emergency allocation need teammate integration.
-
-## Continuous loop and stability
-
-Detect stopped blockers and traffic → update the planner state snapshot → build live planner state → evaluate reachable candidate route suffixes → call the existing Replanner → apply through TraCI → measure → repeat.
-
-Blocked remaining routes bypass the commitment timer. Congestion changes require at least 10 seconds since the last route assignment, at least 5 seconds predicted ETA improvement and at least 15% improvement. This decision gate belongs to the experiment harness; it does not rewrite the planner. Route prefixes already traversed are removed when evaluating alternatives. No alternative is invented after the last usable turn. Logs include the current route, candidate, blocked edges, predicted benefit, computation time and APPLY/KEEP/APPLY_FAILED decisions.
-
-## Metric definitions and schema
-
-`SUCCESS` requires SUMO's arrived event. `TELEPORTED` takes precedence over arrival and is terminal even if SUMO later reinserts the vehicle. Unexplained disappearance is `FAILED_BLOCKED` (the name does not prove blockage causality); infrastructure failures are `ERROR` with blank traffic/travel metrics; no initial plan is `NO_ROUTE`; remaining unresolved trips at 900 s are `TIMEOUT`. Do not infer success from disappearance.
-
-Travel time is arrival minus dispatch. Response time is arrival minus the nominal 300 s accident event. ETA error is absolute error against the initial dispatch ETA; failed/teleported trials have blank arrival/travel/response/ETA-error fields. Dispatch can occur after nominal departure due to insertion delay. Initial ETA reflects the existing adapter's edge-speed estimate and excludes explicit intersection-delay prediction.
-
-Replanning latency is simulated seconds from the first observed meaningful candidate change to its successful application, including any commitment wait. Each applied event records its own trigger/completion/latency; the CSV records the first applied replan. Physical E7 stop detection is a separate timestamp and may occur after congestion has already triggered a reroute. It is distinct from `planner_computation_ms`, measured with `time.perf_counter()` and summed across initial planning and re-evaluations; individual call times are logged in events. Congestion and multi-change events retain their individual timings; a later E11-driven change is never attributed to an earlier E7 blockage.
-
-`number_of_replans` and `successful_route_changes` count successful route applications, not evaluations or route-prefix shortening. Edge logs include speed (m/s), travel time (s), occupancy (%), vehicles and queue length (halted vehicles). Background waiting/time loss are means over completed and unfinished car trips in a common 900-second window. Throughput is background arrivals × 3600/900. Average speed is the average of per-step fleet means; it is not distance divided by total trip time.
-
-Legacy controllers and historical CSVs remain on the preserved reference branch. The integrated runner provides both strategies. Read the new paired schema by field name; historical observations are not integration measurements.
-
-## Research limits
-
-Report all seeds and failures. Summaries include success count, teleport count, mean/median/spread of successful travel times and normal-traffic effects. Successful-trip averages alone cannot establish improvement when failure rates differ. Some seeds initially choose a route avoiding E7, so static success is expected and retained. The small synthetic network and four existing candidate routes limit generalization. S06 can exhaust reachable candidates and fail; this is evidence of an integration limit, not a reason to replace teammate routing. No hardware, perception accuracy, real-city validity or joint route-and-signal optimization is claimed.
-
-## Multi-change research scenario S08
-
-S06 blocks E3, E7 and E11: these form the complete eastbound cut into the hospital column. A connectivity test confirms that the 3×3 graph cannot reach J9 after that cut. S06 remains unchanged as a failure regression.
-
-S08 uses a separate 3×4 network in `simulation/network/research/`. J10/J11/J12 add a northern row; bidirectional links E25–E34 provide another crossing. The existing candidate-route interface receives one additional route, E13→E5→E19→E27→E33→E30, ending at the same hospital J9. Subhashini's planner is unchanged. The second blocker on E11 departs at 315 s. Signal geometry changes on the extended network, so S08 travel times must not be compared to S05 as if network were controlled.
+For the synthetic traffic sidecar and optional display-only evaluator:
 
 ```sh
-python -m simulation.tools.research_network
-python -m experiments.runners.compare --scenarios S08 --seeds 1 --output experiments/results/s08-new
+./tools/run_chennai.sh --mode replay-assisted --experimental-traffic-evaluation --seed 17
 ```
 
-Seed-1 validation produced P1 at 311 s, P2 at 321 s and arrival at 425 s (124 s after dispatch), with two successful physical route changes. Both triggers preceded the respective vehicles fully stopping: traffic deterioration caused early evaluation. This is a controlled multi-change demonstration, not a population-level claim.
-
-## Validation, resume and demo
-
-The controlled matrix is S05 and S07 × normal/heavy/peak × seeds 1–10 × static/dynamic = 120 trials. Profiles may run in separate OS processes; each process owns an independent SUMO instance. CPU timing is measured under the recorded machine load and is not a hardware-independent benchmark.
+This mode still runs SUMO; its external traffic input is `REPLAY / SYNTHETIC_SAMPLE`. It is not live Chennai traffic. A completed Chennai output can be replayed without launching a new SUMO process:
 
 ```sh
-python -m experiments.runners.compare --scenarios S05 S07 --profiles normal --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/matrix-normal
-# Repeat with heavy and peak and distinct output directories.
-python -m experiments.runners.compare --scenarios S05 S07 --profiles normal --seeds 1 2 3 4 5 6 7 8 9 10 --output experiments/results/matrix-normal --resume
-python -m experiments.runners.demo
-python -m experiments.runners.demo --gui
-python -m experiments.runners.demo --scenario S08
+venv/bin/python -m citybrain.chennai --mode replay --events /path/to/completed-chennai-output --port 8773 --no-browser
 ```
 
-The demo defaults to dynamic S05 seed 1, uses the same experiment loop, prints dispatch/hospital/route changes/outcome, and writes metrics and event logs. GUI mode starts SUMO automatically with a 100 ms step delay and closes at the 900 s horizon. macOS may require XQuartz startup; it can take longer on its first launch.
+Open `http://127.0.0.1:8773`. Use the timeline, including 61 s for guarded KEEP and 704 s for terminal SUCCESS. At completion, the inactive ambulance is not displayed as a current vehicle fix.
 
-The adapter now includes road endpoints so the existing SignalAgent can return relevant junctions. Its current output is a list, without a priority execution/restoration contract. No independent signal-priority policy is added. Nine regression traffic lights are verified through reversible TraCI phase changes; the research network adds three signalized nodes.
+## Demo B — verified dynamic replanning, separate saved S08 grid run
 
-Statistics include n, successes/failures/teleports and rates, successful travel mean/median/SD/min/max, ETA error, normal-traffic metrics, Wilson success intervals and matched-seed travel differences where both strategies succeeded. Charts include per-scenario six-panel comparisons and a demand chart. No significance claim is generated. Replan checks count actual Replanner calls; applied route changes are counted separately.
+This is the preserved synthetic grid integration demo, **not the Chennai run or a test of its 20-second guard**. Its saved evidence contains exact execution read-back before P0/P1/P2 acceptance at **301/311/316 s**, followed by SUCCESS at **425 s** and 124 s travel. The original generated input hashes are preserved; those input files are not in this compact archive and cannot be recomputed from it.
 
-## Validated S05/S07 checkpoint
+Verify the archive, extract it into a unique temporary directory and start a read-only viewer:
 
-The controlled 120-run validation is complete; see [research notes](experiments/results/RESEARCH_NOTES.md), [measured summary](experiments/results/validation_matrix.md) and [statistics CSV](experiments/results/validation_matrix_statistics.csv). Both headless and actual sumo-gui demos completed. Twelve assertion-based tests and all ten unchanged teammate scripts pass. The optional 560-run suite remains unexecuted.
+```sh
+venv/bin/python tools/verify_saved_replan.py
+DEMO_B_DIR="$(mktemp -d /tmp/citybrain-replan.XXXXXX)"
+venv/bin/python -c "import sys,tarfile; tarfile.open('docs/krishna/s08-3d-demo-evidence.tar.gz').extractall(sys.argv[1],filter='data')" "$DEMO_B_DIR"
+venv/bin/python -m citybrain.dashboard --events "$DEMO_B_DIR/runtime/events.jsonl" --scenario 'SAVED SYNTHETIC S08 GRID — not Chennai' --port 8778 --replay
+```
 
-The initial integration was merged through PR #2 by the repository workflow. Follow-up validation work is on `feature/experiment-validation`; this task did not modify or merge `main`.
+Open `http://127.0.0.1:8778/3d` and seek 301 → 311 → 316 → 425. The ordinary 2D dashboard is at `/`. This replay launches no simulator. Ctrl-C stops the viewer. See the [five-minute walkthrough and two-minute fallback](deliverables/final-academic-submission/FINAL_DEMO_CHECKLIST.md).
 
+## Tests and non-research smoke checks
 
-## Latest checkpoint: official S08 V2
+Use unique output paths. Do not run a full research matrix for a presentation.
 
-S08 validation is complete: 60 trials, 30 matched static/dynamic pairs, generated from the clean committed revision `d380cb9216bff8d27bf72b3728220036cdb60a32`. All 30 dynamic trials arrived; all 30 static trials teleported. Dynamic trials made one replan in 10 cases and two in 20. This supports **repeated multi-replan evidence** within the fixed synthetic scenario. No paired successful travel-time comparison is available.
+```sh
+venv/bin/python -m pytest -q
+for script in test_ambulance_agent.py test_emergency_planner.py test_hospital_agent.py test_models.py test_plan_validator.py test_police_agent.py test_replanner.py test_route_scorer.py test_signal_agent.py test_traffic_agent.py; do venv/bin/python "$script" || break; done
+./tools/run_chennai.sh --mode simulation --seed 17 --seconds-per-step 0 --no-server --no-browser --exit-on-complete --output /tmp/citybrain-new-smoke-UNUSED
+venv/bin/python -m citybrain.chennai.validate --run /tmp/citybrain-new-smoke-UNUSED
+venv/bin/python -m citybrain.chennai.validate --historical
+```
 
-V1 (`b7842f4`) completed 60 trials and is preserved, but was superseded for official analysis after its saved-evidence audit exposed infinite-cost serialization and resume defects. V2 fixes that evidence contract; all six compared simulation outcome fields match V1 across all 60 trials. V2's disk audit and completed-resume dry check passed with zero new SUMO trials. Twenty-two assertion tests and all ten teammate scripts pass.
+Final QA: **447 pytest tests passed**, all ten compatibility scripts passed; both fresh simulation and replay-assisted smokes reached SUCCESS at 704 s; all **2,172 historical manifest entries** matched. Chrome checks covered 3D/SVG, movement, signals, route alignment, guard, closure lifecycle, timestamp recovery, source labels and 800/390 px layouts. [Evidence summary](docs/final-qa-evidence/validation.json).
 
-See [S08 results and limitations](docs/S08_VALIDATION_RESULTS.md), [predeclared protocol](docs/S08_VALIDATION_PROTOCOL.md), [statistics](experiments/results/s08_validation_statistics.csv), and [charts](experiments/results/s08_validation.png). Both versions' compact audit archives are retained in Git. The S05/S07 120-run baseline is unchanged; S06 remains a failure boundary; the optional 560-run suite remains unexecuted. This work is on `feature/s08-multireplan-validation`, based on human-merged PR #3; its PR is left unmerged.
+## Research results and limits
 
-## Integrated software runtime
+The separate preregistered V3.1 study contains 60 synthetic trials: three scenarios × ten matched seeds × static/dynamic arms.
 
-The final integration runtime uses canonical Core state and the structured planner, then physically executes and verifies routes before accepting P0/P1/P2. It supports current-position topology candidates, explicit hospital destinations, terminal teleport handling, configured replanning policy, and separate persisted integration evidence. See [final integration commands and contracts](docs/FINAL_INTEGRATION.md). Historical experiment runners and results retain their original roles; new runtime smokes are separate from the official 180 trials.
+| Scenario | Static SUCCESS | Dynamic SUCCESS | Paired successful response-time comparison |
+|---|---:|---:|---|
+| S05 | 7/10 | 10/10 | Seven pairs; mean/median difference 0 s |
+| S06 | 0/10 | 0/10 | None; both arms teleported in every run |
+| S08 | 0/10 | 10/10 | None; no successful static pairs |
+
+Teleports remain failures in denominators. The small, synthetic study does not establish universal superiority or real-world benefit. It does not evaluate live providers or the display-only advisor. [Analysis](data/output/v3-experiments/v31-matched-sumo-10seed-20261018/v31-analysis.md) · [Protocol](docs/V31_EXPERIMENT_PROTOCOL.md). The original 180-trial evidence is separate and preserved; its [historical experiment guide](docs/HISTORICAL_EXPERIMENT_README.md) documents older harness conventions.
+
+## Submission and boundaries
+
+The [final package](deliverables/final-academic-submission/) contains the 12-slide editable PowerPoint, DOCX/PDF report, fresh Chennai replay screenshot, saved-replanning screenshot, demo scripts and viva guide. [Current feature matrix](docs/FINAL_PROJECT_STATUS.md) distinguishes verified features from advisory, unverified and out-of-scope capabilities.
+
+CityBrain has no real-camera accident detection, physical signal controller, clinical capacity feed or production emergency-response safety certification. Browser geolocation requires user consent and stays in tab memory. Provider requests require separate explicit authorization; none is authorized by these instructions.

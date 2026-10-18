@@ -5,6 +5,7 @@ const pretty = value => JSON.stringify(value ?? 'UNAVAILABLE', null, 2);
 const num = (value, places = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(places) : '—';
 let viewer, geo, latest, replayAt = 0, playing = false, replay = false, busy = false, viewerFailure = '';
 let follow = false, fallbackMode = false, imageryOn = false, lastWall = performance.now();
+let deviceWatch = null, deviceLocation = null;
 const vehicles = new Map(), roads = new Map(), signals = new Map();
 let routeEntity, previousRoute = '', homePosition;
 const C = window.Cesium;
@@ -88,6 +89,85 @@ function marker(id,lon,lat,label,color) {
   return entity;
 }
 
+function matchDevicePoint(lon,lat) {
+  const scaleX=111320*Math.cos(lat*Math.PI/180), scaleY=111320, candidates=[];
+  for(const [id,road] of Object.entries(geo?.roads || {})) {
+    const points=road.coordinates || []; let best=Infinity;
+    for(let i=1;i<points.length;i++) {
+      const ax=(points[i-1][0]-lon)*scaleX, ay=(points[i-1][1]-lat)*scaleY;
+      const bx=(points[i][0]-lon)*scaleX, by=(points[i][1]-lat)*scaleY;
+      const dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;
+      const t=den?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/den)):0;
+      best=Math.min(best,Math.hypot(ax+t*dx,ay+t*dy));
+    }
+    if(Number.isFinite(best)) candidates.push({id,distance:best});
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  if(!candidates.length || candidates[0].distance>15)return {status:'UNMATCHED',road:null,distance:candidates[0]?.distance ?? null};
+  if(candidates[1] && candidates[1].distance-candidates[0].distance<=3)
+    return {status:'AMBIGUOUS',road:null,distance:candidates[0].distance,alternatives:candidates.slice(0,2).map(x=>x.id)};
+  return {status:'MATCHED',road:candidates[0].id,distance:candidates[0].distance};
+}
+
+function clearDeviceLocation(message='DEVICE LOCATION OFF') {
+  if(deviceWatch!==null && navigator.geolocation)navigator.geolocation.clearWatch(deviceWatch);
+  deviceWatch=null;deviceLocation=null;
+  $('location-start').disabled=false;$('location-stop').disabled=true;show('location-status',message);
+  if(viewer){viewer.entities.removeById('consented-device-location');viewer.entities.removeById('consented-device-accuracy');viewer.scene.requestRender();}
+  if(fallbackMode && latest)renderFallback(latest);
+}
+
+function rejectDeviceFix(message) {
+  deviceLocation=null;
+  if(viewer){viewer.entities.removeById('consented-device-location');viewer.entities.removeById('consented-device-accuracy');}
+  show('location-status',message);
+}
+
+function renderDeviceLocation() {
+  const fix=deviceLocation;if(!fix)return;
+  const stale=Date.now()-fix.timestamp_ms>15000;
+  const quality=stale?'STALE':fix.status;
+  fix.freshness=stale?'STALE':'FRESH';
+  const detail=`CONSENTED DEVICE · LOCAL TAB ONLY · ${quality} · ${fix.source} / ${fix.vehicle_id} · ${fix.timestamp} · accuracy ${num(fix.accuracy_m)} m · match offset ${num(fix.match_distance_m)} m · confidence UNCALIBRATED · ${fix.road || 'no road match'}`;
+  show('location-status',detail);
+  if(viewer && !fallbackMode) {
+    let point=viewer.entities.getById('consented-device-location');
+    if(!point)point=viewer.entities.add({id:'consented-device-location',point:{pixelSize:15,color:C.Color.fromCssColorString('#ffd166'),outlineWidth:3,outlineColor:C.Color.WHITE,disableDepthTestDistance:Infinity},label:{text:'CONSENTED DEVICE',font:'bold 11px sans-serif',pixelOffset:new C.Cartesian2(0,-25),showBackground:true,disableDepthTestDistance:Infinity}});
+    point.position=position(fix.longitude,fix.latitude,10);point.label.text='CONSENTED DEVICE · '+quality;point.point.color=C.Color.fromCssColorString(stale?'#9ca6b4':'#ffd166');point.description=safeDescription(detail);
+    let accuracy=viewer.entities.getById('consented-device-accuracy');
+    if(!accuracy)accuracy=viewer.entities.add({id:'consented-device-accuracy',ellipse:{material:C.Color.fromCssColorString('#ffd166').withAlpha(.15),outline:true,outlineColor:C.Color.fromCssColorString('#ffd166'),height:8}});
+    accuracy.position=position(fix.longitude,fix.latitude,8);accuracy.ellipse.semiMajorAxis=fix.accuracy_m;accuracy.ellipse.semiMinorAxis=fix.accuracy_m;
+    viewer.scene.requestRender();
+  } else if(fallbackMode && latest)renderFallback(latest);
+}
+
+function startDeviceLocation() {
+  if(!window.isSecureContext || !navigator.geolocation) {show('location-status','LOCATION UNAVAILABLE · secure local browser geolocation is required');return;}
+  if(deviceWatch!==null)return;
+  $('location-start').disabled=true;$('location-stop').disabled=false;
+  show('location-status','WAITING FOR BROWSER PERMISSION');
+  // Browser permission is requested only after the user presses this button.
+  deviceWatch=navigator.geolocation.watchPosition(position=>{
+    const fix=position.coords, at=position.timestamp, previous=deviceLocation;
+    if(!Number.isFinite(fix.latitude)||!Number.isFinite(fix.longitude)||!Number.isFinite(fix.accuracy)||fix.accuracy>30) {rejectDeviceFix('FIX REJECTED · accuracy unavailable or worse than 30 m');return;}
+    if(previous && at<=previous.timestamp_ms) {rejectDeviceFix('FIX REJECTED · out-of-order location');return;}
+    if(previous && fix.speed>55) {rejectDeviceFix('FIX REJECTED · implausible reported speed');return;}
+    if(previous) {
+      const dt=(at-previous.timestamp_ms)/1000;
+      const dx=(fix.longitude-previous.longitude)*111320*Math.cos(fix.latitude*Math.PI/180),dy=(fix.latitude-previous.latitude)*111320;
+      const allowed=55*dt+previous.accuracy_m+fix.accuracy;
+      if(dt<=0 || Math.hypot(dx,dy)>allowed) {rejectDeviceFix('FIX REJECTED · impossible position jump');return;}
+    }
+    const match=matchDevicePoint(fix.longitude,fix.latitude);
+    deviceLocation={longitude:fix.longitude,latitude:fix.latitude,timestamp_ms:at,timestamp:new Date(at).toISOString(),
+      accuracy_m:fix.accuracy,speed_mps:fix.speed,source:'CONSENTED_DEVICE_LOCAL',vehicle_id:'CONSENTED_BROWSER_SESSION',
+      road:match.road,status:match.status,rejection_reason:match.status==='MATCHED'?null:match.status,
+      match_distance_m:match.distance,confidence:null,alternatives:match.alternatives || [],consent:true};
+    renderDeviceLocation();
+  },error=>rejectDeviceFix('LOCATION ERROR · '+({1:'permission denied',2:'position unavailable',3:'request timed out'}[error.code] || 'unknown browser error')),
+  {enableHighAccuracy:true,maximumAge:0,timeout:15000});
+}
+
 function renderMap(state) {
   const frame=state.chennai;
   if (!frame || !viewer || fallbackMode) { if (fallbackMode) renderFallback(state); return; }
@@ -132,7 +212,7 @@ function renderMap(state) {
     const color=signal.state.includes('G')?'#68e3b3':signal.state.includes('y')?'#ffce73':'#ff6475';
     const entity=marker('signal:'+signal.signal_id,signal.longitude,signal.latitude,'TLS · '+signal.phase,color);
     entity.point.color=C.Color.fromCssColorString(color);
-    entity.description=safeDescription(`SUMO phase ${signal.phase} · link states ${signal.state}. Each character represents a controlled link. Real signal unverified.`);
+    entity.description=safeDescription(`SUMO phase ${signal.phase} · link states ${signal.state} · elapsed ${signal.phase_elapsed_seconds ?? 'UNKNOWN'} s · remaining ${signal.remaining_phase_seconds ?? 'UNKNOWN'} s. Each character represents a controlled link. Real signal unverified.`);
     signals.set(signal.signal_id,entity);
   }
   for (const obs of frame.gps || []) {
@@ -164,6 +244,11 @@ function renderFallback(state) {
   }
   dot(80.154,12.8408,4,'#b9edf0','VIT CHENNAI');
   dot(80.170,12.829,5,'#f6a75a','INCIDENT');
+  if(deviceLocation) {
+    const [x,y]=xy(deviceLocation.longitude,deviceLocation.latitude), radius=Math.max(5,deviceLocation.accuracy_m/(east-west)*880/111320);
+    const ring=document.createElementNS(ns,'circle');ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r',radius);ring.setAttribute('fill','#ffd16622');ring.setAttribute('stroke','#ffd166');ring.setAttribute('stroke-dasharray','4 3');svg.append(ring);
+    dot(deviceLocation.longitude,deviceLocation.latitude,7,'#ffd166','CONSENTED DEVICE · '+deviceLocation.status);
+  }
 }
 
 function renderTrafficOverlay(frame) {
@@ -197,6 +282,15 @@ function renderTrafficPanel(state) {
   const ages=observations.map(o=>o.age_seconds).filter(v=>typeof v==='number');
   show('traffic-time',`Last successful fetch: ${external.last_update || 'UNAVAILABLE'} · Source age: ${ages.length?num(Math.max(...ages))+' s':'UNKNOWN'} · Coverage bounds: ${pretty(external.coverage_area)} · HERE / TomTom coverage unverified unless authorized and measured`);
   show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0} · Quarantined future timestamps: ${external.quarantine_count || 0}`);
+  const experimental=external.experimental_evaluation;
+  show('experimental-advisor',experimental
+    ? `${experimental.action || 'UNKNOWN'} · ${experimental.reason || 'Reason unavailable'} · ${experimental.candidate || 'no candidate'}${experimental.evaluated_candidate ? ' · considered '+experimental.evaluated_candidate : ''} · DISPLAY ONLY; route execution disabled`
+    : 'DISABLED · no experimental recommendation was computed');
+  show('experimental-evidence',experimental
+    ? JSON.stringify({score_basis:experimental.score_basis,baseline_scores:experimental.baseline_scores,
+        adjusted_scores:experimental.adjusted_scores,evidence_used:experimental.evidence_used,
+        evidence:experimental.evidence,candidate_rejections:experimental.candidate_rejections},null,2)
+    : 'UNAVAILABLE');
   const ids=[...new Set(observations.flatMap(o=>o.matched_sumo_edges || []))];
   if(selectedTrafficRoad && !ids.includes(selectedTrafficRoad))ids.unshift(selectedTrafficRoad);
   if(!selectedTrafficRoad)selectedTrafficRoad=ids[0] || '';
@@ -226,11 +320,15 @@ function renderPanel(state) {
   show('queues',frame?Object.values(frame.roads).reduce((a,r)=>a+r.queue,0):null);
   show('emergency-state',state.terminal?.outcome || (plan?'DISPATCHED':'WAITING'));
   show('ambulance-id',frame?.ambulance_id || 'Waiting for ambulance dispatch');
+  const inactiveTerminal=Boolean(state.terminal && !ambulance);
+  $('terminal-vehicle').hidden=!inactiveTerminal;
+  show('terminal-vehicle',inactiveTerminal?`${state.terminal.outcome} · No active SUMO vehicle. The accepted route is recorded history; no current vehicle position is shown.`:'');
+  $('follow').disabled=!ambulance;
   const kv=[['Speed',ambulance?num(ambulance.speed*3.6)+' km/h':'UNAVAILABLE'],
     ['Location',ambulance?`${num(ambulance.latitude,5)}, ${num(ambulance.longitude,5)}`:'UNAVAILABLE'],
     ['Current road',ambulance?.road],['Hospital',hospital?.name || state.hospital],
     ['Plan ETA',plan?num(plan.eta)+' s · estimate at acceptance':'UNAVAILABLE'],
-    ['Response time',state.terminal?.metrics.travel_time != null?num(state.terminal.metrics.travel_time)+' simulation s':'UNAVAILABLE'],
+    ['Travel time',state.terminal?.metrics.travel_time != null?num(state.terminal.metrics.travel_time)+' simulation s':'UNAVAILABLE'],
     ['Arrival',state.terminal?.metrics.arrival_time != null?num(state.terminal.metrics.arrival_time)+' simulation s':'UNAVAILABLE'],
     ['Observation',frame?num(frame.simulation_time,0)+' s · SUMO_SIMULATED':'UNAVAILABLE']];
   $('ambulance').replaceChildren(...kv.flatMap(pair=>pair.map(text=>{const span=document.createElement('span');span.textContent=text??'UNAVAILABLE';return span;})));
@@ -241,7 +339,10 @@ function renderPanel(state) {
   show('agents',pretty({traffic:state.initial_agents.traffic_assessment,ambulance:state.initial_agents.ambulance_result,
     hospital:state.initial_agents.hospital_result,recommendations:plan?.recommendations}));
   show('execution',pretty({plan,execution:state.execution,validation:state.decision.validation_result}));
-  $('signals').replaceChildren(...(frame?.signals || []).map(s=>{const div=document.createElement('div');div.textContent=`${s.signal_id} · phase ${s.phase} · ${s.state} · t=${s.simulation_time}s`;return div;}));
+  $('signals').replaceChildren(...(frame?.signals || []).map(s=>{const div=document.createElement('div');div.textContent=`${s.signal_id} · phase ${s.phase} · ${s.state} · elapsed ${num(s.phase_elapsed_seconds)}s · remaining ${num(s.remaining_phase_seconds)}s · t=${s.simulation_time}s`;return div;}));
+  const requests=plan?.recommendations?.signal || [];
+  $('signal-requests').replaceChildren(...requests.slice(0,4).map(r=>{const div=document.createElement('div');div.textContent=`${r.target} · ADVISORY_ONLY · NOT APPLIED · ${r.reason || 'No reason supplied'}`;return div;}));
+  if(requests.length>4){const div=document.createElement('div');div.textContent=`${requests.length-4} additional advisory requests`; $('signal-requests').append(div);}
   table('roads',['Edge','m/s','Queue','State'],Object.entries(frame?.roads || {}).sort((a,b)=>b[1].queue-a[1].queue).map(([id,r])=>[id,num(r.speed),r.queue,r.blocked?'BLOCKED':r.congestion]));
   show('source',`${state.playback==='REPLAY'?'REPLAY of ':''}SUMO SIMULATED DATA · External: ${frame?.external?.source || 'UNAVAILABLE'}`);
   show('external',pretty({traffic:frame?.external || 'UNAVAILABLE',gps:frame?.gps?.length?frame.gps:'UNAVAILABLE — no GPS feed configured'}));
@@ -269,11 +370,14 @@ async function update() {
     replay=latest.playback==='REPLAY';
     $('replay-controls').hidden=!replay;
     if(replay){$('seek').max=latest.telemetry_max_time; if(firstReplay){replayAt=1;playing=true;} $('seek').value=replayAt;}
-    renderPanel(latest);renderMap(latest);
+    $('play').textContent=playing?'Pause replay':'Play replay';
+    renderPanel(latest);renderMap(latest);renderDeviceLocation();
   } catch(error) {notice('Data unavailable: '+error.message);show('status','DISCONNECTED');}
   finally{busy=false;}
 }
 $('traffic-road').onchange=()=>{selectedTrafficRoad=$('traffic-road').value;if(latest)renderTrafficPanel(latest);};
+$('location-start').onclick=startDeviceLocation;
+$('location-stop').onclick=()=>clearDeviceLocation();
 $('home').onclick=home;
 $('follow').onclick=()=>{follow=!follow;$('follow').classList.toggle('active',follow);if(latest)renderMap(latest);};
 $('flat').onclick=()=>{if(!viewer){notice('WebGL unavailable; 2D fallback remains active.');return;}activateFallback(!fallbackMode);};

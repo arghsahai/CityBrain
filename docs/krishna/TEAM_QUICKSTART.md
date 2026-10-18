@@ -1,3 +1,7 @@
+# Historical team demo quick start
+
+The branch-switch instructions and test counts below describe the 2026-10-15 checkpoint. Use the [current README](../../README.md) and [final demo checklist](../../deliverables/final-academic-submission/FINAL_DEMO_CHECKLIST.md) for the current feature branch. The saved S08 archive remains valid separate replanning evidence.
+
 # CityBrain team quick start
 
 Latest complete branch: **feature/krishna-watchable-demo**. It includes the validated runtime baseline, Krishna research package, read-only dashboard, paced S08 launcher and local 3D viewer.

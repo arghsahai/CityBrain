@@ -1,4 +1,66 @@
-# Four slides and speaking scripts
+# CityBrain V3.1 presentation outline
+
+Use this outline for the current V3.1 academic presentation. It is a slide
+sequence and speaker guide, not a compiled PowerPoint file. The current
+implementation report contains the architecture diagram and full evidence;
+the six-minute local demo runbook is in `docs/V31_DEMO_SCRIPT.md`, and the
+technical viva bank is in `docs/V31_VIVA_QA.md`.
+
+## Recommended seven-slide sequence
+
+1. **Problem, motivation and research question.** Introduce emergency routing
+   under changing road conditions. State that this work evaluates CityBrain
+   policies in a bounded, synthetic SUMO Chennai scenario; it does not measure
+   live emergency response.
+2. **Architecture and authority boundaries.** Show the Mermaid diagram in
+   `docs/V31_IMPLEMENTATION_REPORT.md`: OSM-derived network → SUMO/Core →
+   planner/validator → verified route executor/read-back → telemetry/dashboard.
+   Place provider observations and the experimental advisor on a separate,
+   advisory-only path.
+3. **Chennai digital twin.** Show the local Cesium dashboard with moving
+   vehicles, ambulance, simulated hospital access road, signal telemetry and
+   route geometry. Capture this from the documented local run; do not present
+   an older V2 screenshot as a V3.1 browser result. Label roads as OSM-derived
+   and vehicles, demand, incidents, signals and hospital availability as
+   simulated.
+4. **Route lifecycle and safety.** Explain planner proposal, validation,
+   SUMO route application/read-back and logical acceptance. Describe the
+   20-second soft-change confirmation guard and hard invalidation handling.
+   A P0 → P1 → P2 timeline exists in the separate S08 integration demonstration
+   documented below; it is not the outcome of the fresh V3.1 seed-17 smoke,
+   which reached SUCCESS with zero accepted route changes. Keep these two
+   pieces of evidence distinct.
+5. **Traffic evidence and provenance.** Diagram HERE/TomTom/replay adapters,
+   freshness and directed road matching, then the disabled-by-default
+   experimental advisor. Say explicitly: genuine live HERE/TomTom responses
+   and Chennai coverage are unverified; replay is synthetic/offline; the
+   advisor did not select or execute a route. Signal recommendations remain
+   advisory; no signal controller is implemented. Browser GPS is
+   user-consented and tab-local.
+6. **Matched experiment and results.** Present the 60-cell S05/S06/S08,
+   ten-seed, normal-demand study from
+   `data/output/v3-experiments/v31-matched-sumo-10seed-20261018/v31-analysis.md`.
+   Include the full denominator: S05 static 7/10 SUCCESS vs dynamic 10/10;
+   S06 0/10 vs 0/10 (all TELEPORTED); S08 static 0/10 vs dynamic 10/10.
+   Show successful travel-time summaries separately and state that S06/S08
+   have no matched successful pairs. Never count teleportation as arrival or
+   imply universal or real-world superiority. The experiment did not evaluate
+   the traffic advisor.
+7. **Conclusion, limitations and next work.** Summarize the verified
+   simulation prototype and evidence boundary. List live provider validation,
+   larger calibrated studies, verified signal movement/clearance/restoration
+   design, clinical destination validation and field safety review as future
+   prerequisites. State that this is not production emergency-response
+   infrastructure.
+
+Use the current report and demo script as speaker notes. The V3.1 report and
+analysis are the sources of truth for current metrics. The older slide material
+below is retained for the earlier official research and S08 integration smoke;
+do not combine its denominators or timings with the separate V3.1 study.
+
+---
+
+# Historical V2 experiment slides and S08 integration demo
 
 ## Slide 1 — SUMO Digital Twin
 
