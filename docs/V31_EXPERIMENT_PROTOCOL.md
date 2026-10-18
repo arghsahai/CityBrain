@@ -50,7 +50,8 @@ or general superiority claim.
 ## Exclusions and reproducibility
 
 No post-hoc trial exclusion is permitted. Invalid or missing outputs are retained
-as recorded failures and explained. Do not overwrite or resume a prior directory.
+as recorded failures and explained. Do not overwrite or resume a prior directory
+except for the documented aggregation recovery below.
 The official historical 120-trial and 60-trial datasets and all 2,172 historical
 evidence entries are outside the output path and must remain unchanged.
 
@@ -67,3 +68,17 @@ After execution, write results and analysis into this same new output folder,
 along with this protocol, the final Git revision, runner manifest, exact command,
 per-trial logs and a machine-readable summary. Do not regenerate the official
 research result folders.
+
+## Execution amendment — runner aggregation failure
+
+The first execution attempt was launched at revision
+`08e5ac8b110dd22f28bb5af9225289f855f38623`. It completed and checkpointed 41
+planned cells (all S05/S06 seeds and S08 seed 1 static), then failed while
+assembling `results.csv`: S08 adds audit columns and the writer used only the
+first row's columns. All per-trial JSON/events remain in the designated new
+output directory. The attempt is neither erased nor overwritten. A regression
+test verifies union-column preservation. After the writer fix is committed,
+resume the exact command with `--resume`; preserve the original manifest
+signature and add the new runner-fix revision. The final results must report the
+initial aggregation error and distinguish first-attempt checkpoints from any
+actually retried trials. No completed output is excluded from reporting.

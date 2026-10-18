@@ -89,3 +89,16 @@ class ValidationTests(unittest.TestCase):
             self.assertEqual(row['completion_status'],'ERROR')
             self.assertEqual(row['actual_travel_time'],'')
             self.assertEqual(row['normal_traffic_time_loss'],'')
+
+    def test_combined_csv_preserves_scenario_specific_fields(self):
+        import csv
+        with tempfile.TemporaryDirectory() as temporary:
+            static=initial_result('S05','static',1,'normal')
+            dynamic=initial_result('S05','dynamic',1,'normal')
+            dynamic['scenario_specific_audit']='retained'
+            output=Path(temporary)/'combined.csv'
+            write_csv(output,[static,dynamic])
+            with output.open() as stream:
+                rows=list(csv.DictReader(stream))
+            self.assertEqual(rows[0]['scenario_specific_audit'],'')
+            self.assertEqual(rows[1]['scenario_specific_audit'],'retained')
