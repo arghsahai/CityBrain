@@ -44,30 +44,59 @@ flowchart LR
 ## Validation evidence
 
 Baseline revision was `368a83c041e171f664b8bb156b785aeedd4f9d65`; the branch was
-clean, matched its origin ref and was based on `origin/main`. PR #10 was open and
-Draft, targeting `main`. V3.1 milestones were committed and pushed individually;
-see the branch history and the PR for exact SHAs.
+clean, matched its origin ref and was based on `origin/main`. PR #10 is still
+open and Draft, targeting `main`. Current branch: [`feature/citybrain-v3-roadmap`](https://github.com/arghsahai/CityBrain/tree/feature/citybrain-v3-roadmap).
 
-At baseline, **437 pytest tests**, all ten legacy compatibility scripts and the
-read-only historical manifest validator passed. The preregistered comparison
-contains 60 complete trial rows after resuming the preserved partial outputs
-following an aggregation-only runner fix. Outcomes and matched-success
+| Milestone | Commit |
+|---|---|
+| Baseline audit | `37ebe9bc48f95608a641c9b03ff3fb73af63ae8f` |
+| Preregistered experiment protocol | `08e5ac8b110dd22f28bb5af9225289f855f38623` |
+| Opt-in advisory traffic route advisor | `07084687c093cdaabf2da4aa287167e30f9c9297` |
+| Scenario-specific CSV aggregation fix and documented recovery | `9e1a9be610f3172c5185b61f4caad063c8309cb4` |
+| Signal/GPS boundaries and browser checks | `46dd0ad96794c9b9306967e9c1dbc505ce7fe468` |
+| Advisor oscillation history | `fa66b93ec8c439402edcda4148cad8b160e0783b` |
+| Held-candidate label clarification | `1e73a600ce099cbcbefb654a3127b41df551b11a` |
+| Results, per-trial logs and final documentation | `6cad0ff829a200da79d84ef7297a49901411d658` |
+
+All listed commits were pushed and the checked remote branch head matched local
+HEAD at verification. PR #10 remains available at
+[`https://github.com/arghsahai/CityBrain/pull/10`](https://github.com/arghsahai/CityBrain/pull/10).
+Its existing description still reflects V3.0: the Safari GitHub session was
+signed out, and the GitHub connector was unavailable, so its body could not be
+refreshed from this environment. The PR remains Draft and unmerged.
+
+Final validation: **447 pytest tests passed**, all ten legacy compatibility
+scripts passed, and `citybrain.chennai.validate --run` verified the fresh
+runtime output. The read-only historical validator found **2,172 / 2,172**
+entries with no missing, extra, hash or size mismatches. The preregistered
+comparison contains all 60 planned trial cells after resuming preserved
+per-trial checkpoints following an aggregation-only CSV schema fix. S05 static
+was 7/10 SUCCESS versus dynamic 10/10; S06 was 0/10 in both arms (all
+TELEPORTED); S08 static was 0/10 versus dynamic 10/10. Among seven S05 pairs
+where both succeeded, response-time difference was 0 seconds. No successful
+S06/S08 pairs existed. The 95% Wilson intervals are wide; do not interpret these
+small synthetic results as proof of superiority. Outcomes and matched-success
 uncertainty are in [`v31-analysis.md`](../data/output/v3-experiments/v31-matched-sumo-10seed-20261018/v31-analysis.md)
-and its JSON companion. Do not interpret N=10 cells as proof of superiority.
+and its JSON companion. Per-trial result rows and losslessly compressed event
+logs are retained beside them.
 
 The checked-in seed-1 S05/S06/S08 baseline summary remains a smoke package, not a
-formal effect estimate. A fresh seed-17 default simulation reached SUCCESS at
-704 simulated seconds (dispatch 51 s; 653 s travel), with zero telemetry and
-dashboard write failures. The final opt-in advisor simulation and final full
-pytest/compatibility checks are recorded in the delivery report after exit
-statuses have been verified.
+formal effect estimate. Both a fresh seed-17 default simulation and a fresh
+seed-17 opt-in replay-assisted advisor simulation reached SUCCESS at 704
+simulated seconds (dispatch 51 s; 653 s travel), with zero telemetry/dashboard
+write failures. In the opt-in run, 51 pre-plan evaluations returned NO_ROUTE and
+653 post-plan evaluations kept the current route; all inputs were
+`SYNTHETIC_SAMPLE`, no route was committed, and no evaluation failed. No eligible
+sample measurement changed the candidate ranking in this run.
 
 The browser replay review used Chrome 155 and recorded zero page errors. It
 verified observed moving vehicles, route geometry, signal states, guarded KEEP,
 synthetic traffic labels, external 3D/SVG overlays, selected-road comparison,
 UNKNOWN/EXPIRED labels, closure markers `1 → 0 → 1`, future timestamp quarantine
 and recovery, 800-pixel layout, and mocked advisor evidence rendered as
-display-only. Mock fixtures do not establish live provider behavior.
+display-only against the fresh replay-assisted run. A separate replay check
+observed the guarded KEEP and unchanged accepted P0. Mock fixtures do not
+establish live provider behavior.
 
 The network exposes two SUMO traffic lights and fixed programs with 4 and 14
 controlled connection entries. Program phase `minDur`/`maxDur` values are unset;
