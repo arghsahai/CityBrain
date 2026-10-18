@@ -237,6 +237,22 @@ SUMO signals remain simulated and all recommendations advisory.
 
 ## Commands and verification
 
+The non-networking readiness command never reads or displays key values:
+
+```sh
+venv/bin/python tools/verify_traffic_provider.py --provider here
+venv/bin/python tools/verify_traffic_provider.py --provider tomtom
+```
+
+These report `NOT_CONFIGURED` or `CONFIGURED_NOT_VERIFIED`. To make exactly one
+real request in a future, separately authorized check, use
+`venv/bin/python tools/verify_traffic_provider.py --provider here --authorize-live-request`
+(or `tomtom`). This opt-in command may incur charges. It reports a provider as
+`VERIFIED` only after a genuine successful response with fresh source timestamps;
+stale data reports `STALE`, unknown source time reports `UNKNOWN`, and errors
+report their safe category. This implementation did not execute the live-request
+command. Mocked and replay observations cannot verify provider connectivity.
+
 ```sh
 # Existing default remains simulation-only:
 ./tools/run_chennai.sh --traffic-source simulation

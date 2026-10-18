@@ -46,6 +46,8 @@ def test_enabled_fresh_high_confidence_observation_adjusts_only_sidecar_cost():
     ({'matching_coverage':.94},'INSUFFICIENT_GEOGRAPHIC_COVERAGE'),
     ({'observation_timestamp':None},'UNKNOWN_SOURCE_TIME'),
     ({'observation_timestamp':NOW.replace(year=2027)},'FUTURE_SOURCE_TIME'),
+    ({'observation_timestamp':NOW.replace(day=17)},'OBSERVATION_NOT_FRESH'),
+    ({'retrieved_at':None},'INVALID_RETRIEVAL_TIME'),
     ({'current_speed':None},'MISSING_OR_INVALID_SPEED'),
     ({'source_type':'UNTRUSTED'},'UNSUPPORTED_PROVENANCE'),
 ])
@@ -70,6 +72,13 @@ def test_conflicting_provider_estimates_exclude_edge():
         TrafficEvaluationConfig(enabled=True))
     assert result['conflicting_edges'] == {'edge-a':'CONFLICTING_PROVIDER_ESTIMATES'}
     assert result['adjusted_scores'] == {'r':1.0}
+
+
+def test_malformed_geometry_is_quarantined_without_exception():
+    result=evaluate_candidates({'r':['edge-a']},{'r':1},
+        [observation(road_geometry=((None,12.84),(80.15,12.84)))],NOW,TrafficEvaluationConfig(enabled=True))
+    assert result['evidence'][0]['rejection_reason']=='MISSING_GEOMETRY'
+    assert result['adjusted_scores']=={'r':1.0}
 
 
 def test_adjustments_are_bounded_and_duplicate_route_edges_count_once():

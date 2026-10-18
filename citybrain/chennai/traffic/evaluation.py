@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 import math
+from .freshness import FreshnessPolicy
 
 
 @dataclass(frozen=True)
@@ -73,15 +74,18 @@ def validate_evidence(observation, now, config=TrafficEvaluationConfig()):
     edges = tuple(_get(observation, 'matched_sumo_edges', ()) or ())
     speed, free = _get(observation, 'current_speed'), _get(observation, 'free_flow_speed')
     provenance = _get(observation, 'source_type', _get(observation, 'provenance', 'UNKNOWN'))
-    freshness, direction = _get(observation, 'freshness_status', 'UNKNOWN'), _get(observation, 'direction', 'UNKNOWN')
+    claimed_freshness, direction = _get(observation, 'freshness_status', 'UNKNOWN'), _get(observation, 'direction', 'UNKNOWN')
+    freshness = FreshnessPolicy().classify(source, now)[0]
     if provenance not in {'HERE_LIVE', 'TOMTOM_LIVE', 'REPLAY', 'SYNTHETIC_SAMPLE', 'MOCKED_PROVIDER'}:
         reason = 'UNSUPPORTED_PROVENANCE'
     elif source is None:
         reason = 'UNKNOWN_SOURCE_TIME'
-    elif source > now:
+    elif freshness == 'UNKNOWN' and source > now:
         reason = 'FUTURE_SOURCE_TIME'
-    elif freshness != 'FRESH':
+    elif freshness != 'FRESH' or claimed_freshness != 'FRESH':
         reason = 'OBSERVATION_NOT_FRESH'
+    elif retrieved is None:
+        reason = 'INVALID_RETRIEVAL_TIME'
     elif direction != 'FORWARD':
         reason = 'UNKNOWN_OR_UNSUPPORTED_DIRECTION'
     elif _get(observation, 'matching_status') != 'MATCHED' or not edges:
@@ -112,10 +116,16 @@ def _length(geometry):
     if not isinstance(geometry, (list, tuple)) or len(geometry) < 2:
         return None
     total = 0.0
-    for (lon1, lat1), (lon2, lat2) in zip(geometry, geometry[1:]):
-        lat = math.radians((lat1 + lat2) / 2)
-        total += math.hypot(math.radians(lon2-lon1)*6371008.8*math.cos(lat),
-                            math.radians(lat2-lat1)*6371008.8)
+    try:
+        for (lon1, lat1), (lon2, lat2) in zip(geometry, geometry[1:]):
+            if any(not isinstance(v,(int,float)) or isinstance(v,bool) or not math.isfinite(v)
+                   for v in (lon1,lat1,lon2,lat2)):
+                return None
+            lat = math.radians((lat1 + lat2) / 2)
+            total += math.hypot(math.radians(lon2-lon1)*6371008.8*math.cos(lat),
+                                math.radians(lat2-lat1)*6371008.8)
+    except (TypeError, ValueError):
+        return None
     return total if math.isfinite(total) and total > 0 else None
 
 
