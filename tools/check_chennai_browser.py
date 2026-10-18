@@ -91,6 +91,7 @@ def main():
     parser.add_argument('--url',default='http://127.0.0.1:8770')
     parser.add_argument('--output',type=Path,default=Path('docs/chennai'))
     parser.add_argument('--traffic',action='store_true',help='Verify synthetic advisory panel and 3D/2D overlays')
+    parser.add_argument('--experimental-advisor',action='store_true',help='Render a mocked, display-only route recommendation')
     parser.add_argument('--closure-hotfix',action='store_true',help='Verify backend closure/open/closure replacement and both marker layers')
     parser.add_argument('--keep-at',type=int,help='Verify an observed stability-deferral timestamp')
     parser.add_argument('--accepted-replan-at',type=int,help='Verify a recorded accepted replan')
@@ -237,6 +238,21 @@ def main():
             frame['chennai']['external'].update(stale_records=1,unknown_time_records=0)
             page.evaluate('(state)=>renderTrafficPanel(state)',frame)
             expect(page.locator('#traffic-comparison')).to_contain_text('EXPIRED')
+        if args.experimental_advisor:
+            from copy import deepcopy
+            frame=deepcopy(state)
+            frame['chennai']['external']['experimental_evaluation']={
+                'enabled':True,'action':'ADVISORY_RECOMMENDATION','candidate':'candidate-b',
+                'reason':'ELIGIBLE_EXPERIMENTAL_EVIDENCE','score_basis':'SUMO_FREE_FLOW_LENGTH_OVER_SPEED',
+                'baseline_scores':{'current':40,'candidate-b':25},
+                'adjusted_scores':{'current':40,'candidate-b':31},'evidence_used':['fixture-1'],
+                'candidate_rejections':{'candidate-c':'DISCONNECTED_ROUTE'},
+                'evidence':[{'observation_id':'fixture-1','provenance':'MOCKED_PROVIDER','freshness':'FRESH'}]}
+            page.evaluate('(value)=>renderTrafficPanel(value)',frame)
+            expect(page.locator('#experimental-advisor')).to_contain_text('ADVISORY_RECOMMENDATION')
+            expect(page.locator('#experimental-advisor')).to_contain_text('DISPLAY ONLY')
+            expect(page.locator('#experimental-evidence')).to_contain_text('MOCKED_PROVIDER')
+            expect(page.locator('#experimental-evidence')).to_contain_text('DISCONNECTED_ROUTE')
         closure_states = (assert_closure_transitions(page,
             page.request.get(args.url+'/api/state?at=220').json(),args.output) if args.closure_hotfix else [])
         assert not errors,errors
@@ -245,8 +261,10 @@ def main():
                     'accepted route geometry matches backend','actual signal states','SVG fallback',
                     'replay time filtering','terminal SUCCESS','800px layout']+
                    (['guarded KEEP and unchanged accepted P0'] if args.keep_at is not None else [])+
-                   (['synthetic advisory source labels','separate external 3D and SVG flow/incident overlays','external geometry matches backend','selected road comparison','synthetic UI missing timestamp UNKNOWN and expired source label'] if args.traffic else []),
+                   (['synthetic advisory source labels','separate external 3D and SVG flow/incident overlays','external geometry matches backend','selected road comparison','synthetic UI missing timestamp UNKNOWN and expired source label'] if args.traffic else [])+
+                   (['mocked experimental candidate evidence rendered as display-only'] if args.experimental_advisor else []),
             traffic_checked=args.traffic,
+            experimental_advisor_checked=args.experimental_advisor,
             consented_device_location_checked=args.device_location,
             consented_location_scenarios=location_scenarios,
             closure_states=closure_states,

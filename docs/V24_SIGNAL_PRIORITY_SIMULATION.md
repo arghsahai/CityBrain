@@ -33,3 +33,17 @@ Existing SUMO tests verify actual signal telemetry changes through multiple
 program states. They verify observation only, not priority grant or actuation.
 The advisory `REQUEST_SIGNAL_PRIORITY` entries stay distinguishable from applied
 simulation state. No dashboard or provider callback writes a signal phase.
+
+## V3.1 network capability audit
+
+The loaded `simulation/chennai/network/chennai.net.xml` contains two SUMO traffic
+lights. Its static programs expose 4 controlled connections across the first
+light and 14 across the second. Program phases have fixed `duration` values but
+`minDur` and `maxDur` are unset (`-1`). The phase strings contain green/yellow
+transitions, but neither program establishes a reviewed per-movement emergency
+compatibility table or a guaranteed all-red clearance/restoration contract. The
+planner's signal recommendation identifies a junction, not an incoming-lane to
+outgoing-lane movement and link index. The network is therefore insufficient to
+activate even a SUMO-only priority controller under the V3.1 safety requirements.
+Only telemetry and advisory display remain enabled; no phase or program writes
+are introduced.

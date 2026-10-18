@@ -29,3 +29,13 @@ runtime feed. Device fixes do not become emergency-vehicle state. Adding a
 runtime input would require a separately reviewed authentication, consent,
 retention and failure-isolation design. This prototype does not track arbitrary
 cars or infer individual GPS traces from public traffic data.
+
+## V3.1 implementation decision
+
+The optional loopback runtime feed was not added. The existing browser-consented,
+tab-memory marker already serves the demonstration need while avoiding a new
+network receiver, coordinate transport and runtime data lifecycle. It remains a
+visual aid only; synthetic GPS replay is distinct and clearly labeled. A runtime
+feed would add data-handling risk without enabling any accepted CityBrain
+planning behavior, so it remains future work pending a separately reviewed use
+case and privacy design.
