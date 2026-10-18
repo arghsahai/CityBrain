@@ -61,9 +61,17 @@ def _experimental_traffic_advice(runtime, observations, now, net):
         active_since = now-timedelta(seconds=max(0, runtime.now-active_since)) if isinstance(active_since,(int,float)) else None
         last_change = runtime.replanner.last_replan_time
         last_change = now-timedelta(seconds=max(0, runtime.now-last_change)) if isinstance(last_change,(int,float)) else None
+        recent_route_ids = []
+        for previous in list(getattr(runtime, 'plan_history', ()))[:-1][-3:]:
+            previous_route = list(getattr(previous, 'route', ()))
+            if start not in previous_route:
+                continue
+            previous_suffix = previous_route[previous_route.index(start):]
+            recent_route_ids.extend(route_id for route_id,path in routes.items()
+                                    if route_id != 'current' and path == previous_suffix)
         decision = advisory_route_recommendation(comparison, routes, 'current', now,
             edge_successors=successors, current_route_active_since=active_since,
-            last_route_change_at=last_change, config=config)
+            last_route_change_at=last_change, recent_route_ids=recent_route_ids, config=config)
         return {**decision, 'enabled':True, 'score_basis':'SUMO_FREE_FLOW_LENGTH_OVER_SPEED',
                     'adjusted_scores':comparison['adjusted_scores'], 'baseline_scores':comparison['baseline_scores'],
                     'evidence':comparison['evidence'], 'evidence_used_by_candidate':comparison['evidence_used_by_candidate'],

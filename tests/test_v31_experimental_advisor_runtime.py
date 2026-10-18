@@ -42,6 +42,12 @@ def test_runtime_sidecar_emits_advice_without_route_execution():
     assert result['planner_invoked'] is False
     assert result['route_committed'] is False
     assert result['canonical_measurements_modified'] is False
+    current=SimpleNamespace(route=['current','bad'])
+    previous=SimpleNamespace(route=['current','alt'])
+    rt=runtime();rt.plan_history=[previous,current]
+    held=_experimental_traffic_advice(rt,[obs],NOW,Network())
+    assert held['action']=='KEEP'
+    assert held['reason']=='RECENT_ROUTE_OSCILLATION'
 
 
 def test_runtime_sidecar_contains_failures_and_missing_plan_without_raising():
