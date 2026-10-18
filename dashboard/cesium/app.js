@@ -282,6 +282,15 @@ function renderTrafficPanel(state) {
   const ages=observations.map(o=>o.age_seconds).filter(v=>typeof v==='number');
   show('traffic-time',`Last successful fetch: ${external.last_update || 'UNAVAILABLE'} · Source age: ${ages.length?num(Math.max(...ages))+' s':'UNKNOWN'} · Coverage bounds: ${pretty(external.coverage_area)} · HERE / TomTom coverage unverified unless authorized and measured`);
   show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0} · Quarantined future timestamps: ${external.quarantine_count || 0}`);
+  const experimental=external.experimental_evaluation;
+  show('experimental-advisor',experimental
+    ? `${experimental.action || 'UNKNOWN'} · ${experimental.reason || 'Reason unavailable'} · ${experimental.candidate || 'no candidate'} · DISPLAY ONLY; route execution disabled`
+    : 'DISABLED · no experimental recommendation was computed');
+  show('experimental-evidence',experimental
+    ? JSON.stringify({score_basis:experimental.score_basis,baseline_scores:experimental.baseline_scores,
+        adjusted_scores:experimental.adjusted_scores,evidence_used:experimental.evidence_used,
+        evidence:experimental.evidence,candidate_rejections:experimental.candidate_rejections},null,2)
+    : 'UNAVAILABLE');
   const ids=[...new Set(observations.flatMap(o=>o.matched_sumo_edges || []))];
   if(selectedTrafficRoad && !ids.includes(selectedTrafficRoad))ids.unshift(selectedTrafficRoad);
   if(!selectedTrafficRoad)selectedTrafficRoad=ids[0] || '';

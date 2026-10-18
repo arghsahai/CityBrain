@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from citybrain.chennai.traffic.evaluation import TrafficEvaluationConfig, evaluate_candidates, validate_evidence
+from citybrain.chennai.traffic.evaluation import (TrafficEvaluationConfig, advisory_route_recommendation,
+    evaluate_candidates, validate_evidence)
 
 NOW = datetime(2026, 10, 18, 12, tzinfo=timezone.utc)
 
@@ -93,3 +94,63 @@ def test_invalid_configuration_and_naive_clock_are_rejected():
         TrafficEvaluationConfig(enabled=True,maximum_route_adjustment_seconds=float('inf'))
     with pytest.raises(ValueError):
         validate_evidence(observation(),datetime(2026,10,18),TrafficEvaluationConfig(enabled=True))
+
+
+def route_evaluation(config=None):
+    config = config or TrafficEvaluationConfig(enabled=True)
+    routes = {'current':['edge-current'], 'alternate':['edge-a']}
+    result = evaluate_candidates(routes, {'current':40,'alternate':20},
+        [observation()], NOW, config)
+    topology = {'edge-current':set(), 'edge-a':set()}
+    return result, routes, topology, config
+
+
+def test_opt_in_advisor_recommends_only_connected_route_with_eligible_evidence():
+    result, routes, topology, config = route_evaluation()
+    decision = advisory_route_recommendation(result, routes, 'current', NOW,
+        edge_successors=topology, current_route_active_since=NOW.replace(hour=11,minute=30), config=config)
+    assert decision['action']=='ADVISORY_RECOMMENDATION'
+    assert decision['candidate']=='alternate'
+    assert decision['reason']=='ELIGIBLE_EXPERIMENTAL_EVIDENCE'
+    assert decision['planner_invoked'] is False and decision['route_committed'] is False
+
+
+@pytest.mark.parametrize(('kwargs','reason'), [
+    ({'current_route_active_since':None},'COMMITMENT_START_UNKNOWN'),
+    ({'current_route_active_since':NOW},'COMMITMENT_PENDING'),
+    ({'current_route_active_since':NOW.replace(hour=11,minute=30), 'last_route_change_at':NOW},'COOLDOWN_PENDING'),
+    ({'current_route_active_since':NOW.replace(hour=11,minute=30), 'recent_route_ids':['alternate']},'RECENT_ROUTE_OSCILLATION'),
+])
+def test_opt_in_advisor_holds_for_commitment_cooldown_and_oscillation(kwargs,reason):
+    result, routes, topology, config = route_evaluation()
+    kwargs.setdefault('current_route_active_since',NOW.replace(hour=11,minute=30))
+    decision=advisory_route_recommendation(result,routes,'current',NOW,
+        edge_successors=topology,config=config,**kwargs)
+    assert decision['action']=='KEEP' and decision['reason']==reason
+
+
+def test_opt_in_advisor_rejects_disconnected_alternative_and_insufficient_improvement():
+    result, routes, topology, config = route_evaluation()
+    routes['alternate']=['edge-a','edge-not-connected']
+    topology['edge-not-connected']=set()
+    decision=advisory_route_recommendation(result,routes,'current',NOW,
+        edge_successors=topology,current_route_active_since=NOW.replace(hour=11,minute=30),config=config)
+    assert decision['action']=='KEEP'
+    assert decision['candidate_rejections']['alternate']=='DISCONNECTED_ROUTE'
+    routes={'current':['edge-current'],'alternate':['edge-a']}
+    small=TrafficEvaluationConfig(enabled=True,minimum_improvement_seconds=100)
+    result=evaluate_candidates(routes,{'current':40,'alternate':20},[observation()],NOW,small)
+    decision=advisory_route_recommendation(result,routes,'current',NOW,
+        edge_successors=topology,current_route_active_since=NOW.replace(hour=11,minute=30),config=small)
+    assert decision['action']=='KEEP' and decision['reason']=='INSUFFICIENT_IMPROVEMENT'
+
+
+def test_advisor_is_disabled_by_default_and_connectivity_is_fail_closed():
+    result,routes,topology,_=route_evaluation()
+    decision=advisory_route_recommendation(result,routes,'current',NOW,
+        edge_successors=topology,current_route_active_since=NOW.replace(hour=11,minute=30))
+    assert decision['reason']=='FEATURE_DISABLED'
+    decision=advisory_route_recommendation(result,routes,'current',NOW,
+        edge_successors={},current_route_active_since=NOW.replace(hour=11,minute=30),
+        config=TrafficEvaluationConfig(enabled=True))
+    assert decision['action']=='NO_ROUTE' and decision['reason']=='CURRENT_ROUTE_UNVERIFIED'

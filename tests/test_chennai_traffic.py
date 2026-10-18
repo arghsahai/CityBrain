@@ -269,7 +269,8 @@ def test_provider_package_cannot_control_planner_or_sumo():
 def test_dashboard_labels_and_distinct_overlay_hooks():
     root=Path(__file__).parents[1]/'dashboard/cesium'
     html=(root/'index.html').read_text();js=(root/'app.js').read_text()
-    assert 'LIVE TRAFFIC OBSERVATIONS' in html
+    assert 'TRAFFIC OBSERVATIONS' in html and 'LIVE TRAFFIC OBSERVATIONS' not in html
+    assert 'OPT-IN EXPERIMENTAL ROUTE ADVISOR' in html
     assert 'SUMO_SIMULATED speed' in js and 'External speed' in js
     assert 'external-flow:' in js and 'external-incident:' in js
     assert 'NO VERIFIED ROAD MATCHES' in js and 'freshness_status' in js

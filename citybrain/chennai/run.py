@@ -20,14 +20,66 @@ from citybrain.chennai.telemetry import DashboardWriter, emit
 from citybrain.chennai.traffic import ReplayTrafficProvider, HERETrafficProvider, TomTomTrafficProvider
 from citybrain.chennai.traffic.matching import RoadMatcher
 from citybrain.chennai.traffic.service import TrafficService
+from citybrain.chennai.traffic.evaluation import TrafficEvaluationConfig, evaluate_candidates, advisory_route_recommendation
 from citybrain.chennai.gps import replay as gps_replay
 from citybrain.chennai.stability import ChennaiRuntime, StabilityConfig
+
+
+def _experimental_traffic_advice(runtime, observations, now, net):
+    """Build a display-only candidate comparison from current SUMO route state."""
+    try:
+        if runtime.active_plan is None:
+            return dict(enabled=True, action='NO_ROUTE', reason='NO_ACCEPTED_PLAN',
+                        planner_invoked=False, route_committed=False)
+        position = runtime.core.traci.route_position(runtime.ambulance_id)
+        current_path = list(position['remaining_route'])
+        if not current_path or current_path[0].startswith(':'):
+            return dict(enabled=True, action='NO_ROUTE', reason='CURRENT_EDGE_UNUSABLE',
+                        planner_invoked=False, route_committed=False)
+        start = current_path[0]
+        routes = {'current': current_path}
+        for name, path in runtime.routes.items():
+            path = list(path)
+            if start in path:
+                suffix = path[path.index(start):]
+                if suffix and suffix != current_path:
+                    routes[str(name)] = suffix
+        def free_flow_seconds(path):
+            total = 0.0
+            for edge_id in path:
+                edge = net.getEdge(edge_id)
+                speed = edge.getSpeed()
+                if not math.isfinite(speed) or speed <= 0:
+                    raise ValueError('invalid free-flow speed')
+                total += edge.getLength()/speed
+            return total
+        scores = {route_id:free_flow_seconds(path) for route_id,path in routes.items()}
+        successors = {edge.getID():{out.getID() for out in edge.getOutgoing()} for edge in net.getEdges()}
+        config = TrafficEvaluationConfig(enabled=True)
+        comparison = evaluate_candidates(routes, scores, observations, now, config)
+        active_since = runtime.active_plan.created_time
+        active_since = now-timedelta(seconds=max(0, runtime.now-active_since)) if isinstance(active_since,(int,float)) else None
+        last_change = runtime.replanner.last_replan_time
+        last_change = now-timedelta(seconds=max(0, runtime.now-last_change)) if isinstance(last_change,(int,float)) else None
+        decision = advisory_route_recommendation(comparison, routes, 'current', now,
+            edge_successors=successors, current_route_active_since=active_since,
+            last_route_change_at=last_change, config=config)
+        return {**decision, 'enabled':True, 'score_basis':'SUMO_FREE_FLOW_LENGTH_OVER_SPEED',
+                    'adjusted_scores':comparison['adjusted_scores'], 'baseline_scores':comparison['baseline_scores'],
+                    'evidence':comparison['evidence'], 'evidence_used_by_candidate':comparison['evidence_used_by_candidate'],
+                    'conflicts':comparison['conflicting_edges'], 'planner_invoked':False,
+                    'route_committed':False, 'canonical_measurements_modified':False}
+    except Exception as error:
+        return dict(enabled=True, action='UNAVAILABLE',
+                    reason=f'EXPERIMENTAL_EVALUATION_FAILED:{type(error).__name__}',
+                    planner_invoked=False, route_committed=False)
 
 
 def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
         open_browser=True, mode='simulation', seed=17, horizon=1000, keep_open=False,
         confirmation_seconds=20.0, traffic_source=None, traffic_replay=None,
-        authorize_traffic_requests=False, traffic_poll_seconds=60):
+        authorize_traffic_requests=False, traffic_poll_seconds=60,
+        experimental_traffic_evaluation=False):
     output = Path(output).resolve()
     if output.is_relative_to(ROOT/'experiments/results'):
         raise ValueError('Pilot output cannot modify historical experiments')
@@ -45,7 +97,8 @@ def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
     elif traffic_source != 'simulation':
         raise ValueError('Unknown traffic source')
     observation_clock = [datetime(2026,10,16,tzinfo=timezone.utc) if traffic_source=='replay' else datetime.now(timezone.utc)]
-    traffic_service = (TrafficService(provider,RoadMatcher(read_network()),poll_seconds=traffic_poll_seconds,
+    road_net = read_network() if provider or experimental_traffic_evaluation else None
+    traffic_service = (TrafficService(provider,RoadMatcher(road_net),poll_seconds=traffic_poll_seconds,
                                      clock=lambda:observation_clock[0]) if provider else None)
     output.mkdir(parents=True, exist_ok=False)
     cfg, metadata = prepare(output/'inputs', profile, seed)
@@ -60,6 +113,7 @@ def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
         seconds_per_simulation_second=seconds_per_step, network=str(NET),
         soft_change_confirmation_seconds=confirmation_seconds,
         traffic_source=traffic_source, traffic_advisory_only=True,
+        experimental_traffic_evaluation=bool(experimental_traffic_evaluation),
         traffic_requests_authorized=authorize_traffic_requests,
         hospital_availability='SIMULATED; not verified clinical capacity')
     runtime._record_evidence('RUN_PROVENANCE', provenance=runtime.provenance)
@@ -102,6 +156,9 @@ def run(output, profile='NORMAL', seconds_per_step=0.33, port=8770, serve=True,
                 external = traffic_service.snapshot() if traffic_service else dict(
                     source='UNAVAILABLE',provider='SIMULATION',status='SIMULATION_ONLY',observations=[],
                     match_status='NO VERIFIED ROAD MATCHES',applied_to_sumo=False)
+                if experimental_traffic_evaluation:
+                    external['experimental_evaluation'] = _experimental_traffic_advice(
+                        runtime, external.get('observations', []), observation_clock[0], road_net)
             except Exception:
                 external = dict(source='UNAVAILABLE', reason='External observation failed')
             try:
@@ -150,6 +207,8 @@ def main():
     parser.add_argument('--traffic-poll-seconds', type=float, default=60)
     parser.add_argument('--authorize-traffic-requests', action='store_true',
                         help='Explicitly authorize potentially billable provider requests; keys alone do not authorize')
+    parser.add_argument('--experimental-traffic-evaluation', action='store_true',
+                        help='Opt in to isolated route cost comparison; advisory only, never executes a route')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--events', type=Path, help='Completed Chennai output directory for replay')
     parser.add_argument('--profile', choices=['NORMAL', 'HEAVY', 'PEAK'], default='NORMAL')
@@ -183,7 +242,8 @@ def main():
                  seed=args.seed, keep_open=not args.exit_on_complete,
                  confirmation_seconds=args.confirmation_seconds, traffic_source=args.traffic_source,
                  traffic_replay=args.traffic_replay, traffic_poll_seconds=args.traffic_poll_seconds,
-                 authorize_traffic_requests=args.authorize_traffic_requests)
+                 authorize_traffic_requests=args.authorize_traffic_requests,
+                 experimental_traffic_evaluation=args.experimental_traffic_evaluation)
     print(json.dumps(health, indent=2))
     if health['summary']['terminal_outcome'] != 'SUCCESS':
         raise SystemExit(1)
