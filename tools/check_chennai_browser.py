@@ -94,13 +94,19 @@ def main():
     parser.add_argument('--closure-hotfix',action='store_true',help='Verify backend closure/open/closure replacement and both marker layers')
     parser.add_argument('--keep-at',type=int,help='Verify an observed stability-deferral timestamp')
     parser.add_argument('--accepted-replan-at',type=int,help='Verify a recorded accepted replan')
+    parser.add_argument('--device-location',action='store_true',help='Emulate one explicitly consented, local browser location fix')
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
     with sync_playwright() as playwright:
         browser=playwright.chromium.launch(channel='chrome',headless=True,
             args=['--use-angle=gl','--enable-webgl','--ignore-gpu-blocklist'])
         page=browser.new_page(viewport={'width':1440,'height':950},device_scale_factor=1)
+        if args.device_location:
+            # Emulate a consented browser location source without reading the
+            # reviewer's actual device coordinates or contacting a service.
+            page.add_init_script("""Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition:(ok,fail)=>{window.__gpsOk=ok;window.__gpsFail=fail;return 7;},clearWatch:()=>{window.__gpsCleared=true;}}});""")
         errors=[]
+        location_scenarios=[]
         page.on('pageerror',lambda error:errors.append(str(error)))
         page.goto(args.url,wait_until='domcontentloaded')
         expect(page.locator('#mode')).to_contain_text('REPLAY',timeout=60000)
@@ -129,6 +135,49 @@ def main():
         assert_rendered_route(page,state,geography)
         for signal in state['chennai']['signals']:
             assert signal['state'] in page.locator('#signals').inner_text()
+        if args.device_location:
+            candidate=page.evaluate('''()=>{for(const road of Object.values(geo.roads)){const p=road.coordinates;for(let i=1;i<p.length;i++){const a=p[i-1],b=p[i],point=t=>({longitude:a[0]+(b[0]-a[0])*t,latitude:a[1]+(b[1]-a[1])*t}),x=point(.4),y=point(.6),mx=matchDevicePoint(x.longitude,x.latitude),my=matchDevicePoint(y.longitude,y.latitude);if(mx.status==='MATCHED'&&my.status==='MATCHED'&&mx.road===my.road)return {...x,next:y,road:mx.road};}}return null;}''')
+            assert candidate, 'No unambiguous road point available for the browser location fixture'
+            page.get_by_text('Consented device location (local display only)',exact=False).click()
+            page.locator('#location-start').click()
+            def deliver(lon,lat,*,accuracy=8,timestamp=None,speed=0):
+                page.evaluate('''f=>window.__gpsOk({timestamp:f.timestamp ?? Date.now(),coords:{longitude:f.longitude,latitude:f.latitude,accuracy:f.accuracy,speed:f.speed}})''',
+                    dict(longitude=lon,latitude=lat,accuracy=accuracy,speed=speed,timestamp=timestamp))
+            test_time=__import__('time').time()*1000-20000
+            deliver(candidate['longitude'],candidate['latitude'],timestamp=test_time)
+            expect(page.locator('#location-status')).to_contain_text('STALE',timeout=10000)
+            deliver(candidate['longitude'],candidate['latitude'],timestamp=test_time+16000)
+            expect(page.locator('#location-status')).to_contain_text('CONSENTED DEVICE · LOCAL TAB ONLY · MATCHED',timeout=10000)
+            assert page.evaluate("Boolean(viewer.entities.getById('consented-device-location') && viewer.entities.getById('consented-device-accuracy'))")
+            expect(page.locator('#location-status')).to_contain_text(candidate['road'])
+            deliver(candidate['next']['longitude'],candidate['next']['latitude'],timestamp=test_time+17000,speed=2)
+            expect(page.locator('#location-status')).to_contain_text(candidate['road'])
+            location_scenarios.append('accurate movement')
+            deliver(candidate['next']['longitude'],candidate['next']['latitude'],timestamp=test_time+16500)
+            expect(page.locator('#location-status')).to_contain_text('out-of-order location')
+            deliver(candidate['longitude'],candidate['latitude'],timestamp=test_time+17500)
+            deliver(candidate['next']['longitude'],candidate['next']['latitude'],accuracy=100,timestamp=test_time+18000)
+            expect(page.locator('#location-status')).to_contain_text('FIX REJECTED · accuracy',timeout=10000)
+            assert page.evaluate("!viewer.entities.getById('consented-device-location')")
+            deliver(candidate['longitude'],candidate['latitude'],timestamp=test_time+19000)
+            expect(page.locator('#location-status')).to_contain_text(candidate['road'])
+            location_scenarios += ['stale fix','poor accuracy rejection','out-of-order rejection']
+            deliver(candidate['longitude']+.01,candidate['latitude'],timestamp=test_time+20000)
+            expect(page.locator('#location-status')).to_contain_text('impossible position jump',timeout=10000)
+            page.evaluate("window.__gpsFail({code:2})")
+            expect(page.locator('#location-status')).to_contain_text('position unavailable',timeout=10000)
+            deliver(candidate['longitude'],candidate['latitude'],timestamp=test_time+21000)
+            expect(page.locator('#location-status')).to_contain_text(candidate['road'])
+            location_scenarios += ['impossible jump rejection','dropout and recovery']
+            ambiguous=page.evaluate('''()=>{for(const road of Object.values(geo.roads))for(let i=1;i<road.coordinates.length;i++){const a=road.coordinates[i-1],b=road.coordinates[i],longitude=(a[0]+b[0])/2,latitude=(a[1]+b[1])/2;if(matchDevicePoint(longitude,latitude).status==='AMBIGUOUS')return {longitude,latitude};}return null;}''')
+            assert ambiguous, 'The Chennai road geometry did not provide an ambiguity fixture'
+            deliver(ambiguous['longitude'],ambiguous['latitude'],timestamp=test_time+22000)
+            expect(page.locator('#location-status')).to_contain_text('AMBIGUOUS')
+            location_scenarios.append('parallel-road ambiguity')
+            page.locator('#location-stop').click()
+            expect(page.locator('#location-status')).to_have_text('DEVICE LOCATION OFF')
+            assert page.evaluate("!viewer.entities.getById('consented-device-location') && window.__gpsCleared===true")
+            location_scenarios.append('stop clears marker')
         if args.traffic:
             expect(page.locator('#traffic-status')).to_contain_text('SYNTHETIC_SAMPLE')
             expect(page.locator('#traffic-status')).to_contain_text('REPLAY')
@@ -198,6 +247,8 @@ def main():
                    (['guarded KEEP and unchanged accepted P0'] if args.keep_at is not None else [])+
                    (['synthetic advisory source labels','separate external 3D and SVG flow/incident overlays','external geometry matches backend','selected road comparison','synthetic UI missing timestamp UNKNOWN and expired source label'] if args.traffic else []),
             traffic_checked=args.traffic,
+            consented_device_location_checked=args.device_location,
+            consented_location_scenarios=location_scenarios,
             closure_states=closure_states,
             accepted_replan_checked=args.accepted_replan_at,
             browser=browser.version)
