@@ -53,18 +53,18 @@ function entityMarker(p,label,color){dynamic.push(viewer.entities.add({position:
 function draw(){
   if(!geo)return;
   const incidents=(state?.incidents||[]).filter(r=>!['REJECTED','RESOLVED'].includes(r.status)),hospitals=state?.hospitals||[],r=state?.recommendation,amb=state?.ambulance;
-  const traffic=state?.traffic?.observations||[];
+  const traffic=(state?.traffic?.observations||[]).filter(row=>row.observation_kind!=='INCIDENT'||row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing);
   if(useFallback){
     const svg=$('fallback');svg.setAttribute('viewBox','0 0 1000 1000');svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.replaceChildren();
     for(const road of Object.values(geo.roads))svgLine(svg,road.coordinates,{class:'road'});
-    for(const row of traffic){if(row.road_geometry?.length>1)svgLine(svg,row.road_geometry,{fill:'none',stroke:row.incident_type==='ROAD_CLOSURE'?'#ffcf70':'#b28bf0','stroke-width':4,'stroke-dasharray':row.freshness_status==='FRESH'?'':'6 4'});}
+    for(const row of traffic){if(row.road_geometry?.length>1)svgLine(svg,row.road_geometry,{fill:'none',stroke:row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0','stroke-width':4,'stroke-dasharray':row.freshness_status==='FRESH'?'':'6 4'});}
     if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)svgLine(svg,edge.coordinates,{class:'route'});
     hospitals.forEach(h=>marker(svg,h.coordinates,h.name,'hospital'));incidents.forEach(i=>marker(svg,i.coordinates,'TEST '+i.status,'incident'));
     if(amb)marker(svg,amb.position.coordinates,'USER_SELECTED','ambulance');if(pin)marker(svg,pin,'Selected pin','incident');
   }else if(viewer){
     dynamic.forEach(e=>viewer.entities.remove(e));dynamic=[];
     if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)dynamic.push(viewer.entities.add({polyline:{positions:Cesium.Cartesian3.fromDegreesArray(edge.coordinates.flat()),width:6,material:Cesium.Color.fromCssColorString('#39e4cd')}}));
-    for(const row of traffic)if(row.road_geometry?.length>1)dynamic.push(viewer.entities.add({polyline:{positions:Cesium.Cartesian3.fromDegreesArray(row.road_geometry.flat()),width:5,material:Cesium.Color.fromCssColorString(row.incident_type==='ROAD_CLOSURE'?'#ffcf70':'#b28bf0')}}));
+    for(const row of traffic)if(row.road_geometry?.length>1)dynamic.push(viewer.entities.add({polyline:{positions:Cesium.Cartesian3.fromDegreesArray(row.road_geometry.flat()),width:5,material:Cesium.Color.fromCssColorString(row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0')}}));
     hospitals.forEach(h=>entityMarker(h.coordinates,h.name,'#79dfad'));incidents.forEach(i=>entityMarker(i.coordinates,'TEST INCIDENT','#ff8a7b'));
     if(amb)entityMarker(amb.position.coordinates,'USER_SELECTED','#ffd570');if(pin)entityMarker(pin,'Selected pin','#ff8a7b');viewer.scene.requestRender();
   }
@@ -75,7 +75,7 @@ function render(){
   $('operator-panel').hidden=role!=='operator';$('hospital-form').hidden=role!=='hospital';$('traffic-test-panel').hidden=role!=='operator'||!s.traffic.offline_test_enabled;
   $('facility').textContent=facility||'';
   $('traffic-source').textContent=s.traffic.source;
-  $('traffic-status').textContent='No actual traffic-provider connection. '+s.provider_access;
+  $('traffic-status').textContent='No actual traffic-provider connection. '+s.provider_access+' · active test closures: '+(s.traffic.active_closures?.length||0);
   $('coverage').textContent='Routing bounds: '+geo.bounds.join(', ')+' · display does not imply routing coverage.';
   if(listChanged('traffic',s.traffic)){
   $('traffic-rows').replaceChildren();
@@ -110,7 +110,7 @@ $('ambulance-pin').onclick=()=>{pinMode='ambulance';say('Click a pilot road for 
 $('position-from-pin').onclick=()=>directed(edge=>place(pointInput(),edge));
 $('direction-confirm').onclick=()=>{if(pendingDirection){const action=pendingDirection,edge=$('direction-choice').value;directed(()=>action(edge));}};
 $('recommend').onclick=()=>{const id=$('incident-choice').value;directed(async edge=>{if(edge)incidentEdges.set(id,edge);const r=await api('recommend',{leg:$('leg').value,incident_id:id,incident_edge:incidentEdges.get(id),incident_arrival_confirmed:$('at-incident').checked,require_icu:$('require-icu').checked,require_trauma:$('require-trauma').checked});say(r.status+' · '+r.eta_label);});};
-for(const b of document.querySelectorAll('[data-state]'))b.onclick=()=>act(()=>api('transition',{status:b.dataset.state}));
+for(const b of document.querySelectorAll('[data-state]'))b.onclick=()=>act(()=>api('transition',{status:b.dataset.state,recommendation_id:state?.recommendation?.id}));
 $('location').onclick=()=>{if(!navigator.geolocation)return say('Geolocation unavailable. Place a pin manually.');navigator.geolocation.getCurrentPosition(p=>{pinMode='report';setPin([p.coords.longitude,p.coords.latitude]);say('Device location selected once, accuracy ±'+Math.round(p.coords.accuracy)+' m. Not submitted until you confirm.');},()=>say('Location unavailable or denied. Place a pin manually.'),{enableHighAccuracy:true,timeout:10000,maximumAge:0});};
 $('hospital-form').onsubmit=e=>{e.preventDefault();act(async()=>{const value=id=>$(id).value===''?null:$(id).value==='true';await api('hospital',{hospital_id:facility,accepting:value('accepting'),trauma:value('trauma'),icu:value('icu'),beds:$('beds').value===''?null:Number($('beds').value),notes:$('hospital-notes').value});say('Saved STAFF_REPORTED availability; expires after 15 minutes.');});};
 $('traffic-test').onclick=()=>act(async()=>{await api('traffic-test',{edge:$('test-edge').value,condition:$('test-condition').value});say('Applied SYNTHETIC_TEST condition. No provider request.');});

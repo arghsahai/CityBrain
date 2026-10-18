@@ -132,7 +132,12 @@ class LiveService:
             return row
 
     def _traffic(self):
-        return self.traffic.snapshot() if self.traffic else dict(source='UNAVAILABLE',observations=[],costs={},providers={})
+        try:
+            if self.traffic:
+                return self.traffic.snapshot()
+        except Exception:
+            pass  # No provider exception text or credentials cross this boundary.
+        return dict(source='UNAVAILABLE',observations=[],costs={},providers={},errors=['TRAFFIC_UNAVAILABLE'])
 
     def recommend(self,body):
         with self.lock:
@@ -203,6 +208,8 @@ class LiveService:
         agents=dict(ambulance=asdict(selected),traffic=asdict(TrafficAgent().assess({'roads':roads})),
                     police=asdict(PoliceAgent().recommend(emergency)),signal=asdict(SignalAgent().recommend(route['route'],{'roads':roads})),
                     hospital=dict(reason='RECENT_STAFF_REPORT_AND_REACHABILITY' if hospital else 'NOT_REQUIRED_FOR_FIRST_LEG'))
+        agents['traffic'].update(eligible_observations=sum(r.get('eligible_for_routing',False) for r in traffic['observations']),
+            route_cost_sources=sorted({c['source'] for c in route['components']}))
         for row in agents.values():
             row.update(source='USER_SELECTED / OSM_ESTIMATE / OFFLINE_TEST',updated_at=self.iso(),
                 validity='PROTOTYPE_ADVISORY',missing='No field validation or authorized operational integration')
@@ -242,19 +249,29 @@ class LiveService:
             # Same route refreshes provenance/ETA without retaining approval on
             # changed inputs. A kept alternative retains geometry but re-scores.
             if not changed:
-                status=old['status'] if old.get('components')==candidate['components'] else 'PENDING_OPERATOR_REVIEW'
-                self.current=dict(old,**candidate,status=status,reason='KEEP_SAME_VALID_ROUTE',updated_at=self.iso())
+                inputs_changed=old.get('components')!=candidate['components']
+                status='PENDING_OPERATOR_REVIEW' if inputs_changed else old['status']
+                self.current=dict(old,**candidate,id=secrets.token_hex(8) if inputs_changed else old['id'],status=status,reason='KEEP_SAME_VALID_ROUTE',updated_at=self.iso())
             else:
                 self.current.update(status='PENDING_OPERATOR_REVIEW',reason='KEEP_COOLDOWN_OR_INSUFFICIENT_IMPROVEMENT',eta_seconds=old_seconds)
+                self.current['traffic_source']=candidate['traffic_source']
                 for c in self.current['components']:
                     row=costs.get(c['edge'],{})
                     c.update(seconds=row.get('seconds',self.graph.edges[c['edge']]['length']/self.graph.edges[c['edge']]['speed'])*c['fraction'],source=row.get('source','ESTIMATED_FREE_FLOW'),freshness=row.get('freshness','UNKNOWN'))
+                self.current['estimated_edges']=sum(c['source']=='ESTIMATED_FREE_FLOW' for c in self.current['components'])
+                self.current['observed_edges']=len(self.current['components'])-self.current['estimated_edges']
             self.history.append(dict(at=self.iso(),action='KEEP',reason=self.current['reason']))
             self.history=self.history[-50:]
             return self.current
 
-    def transition(self,status):
+    def transition(self,status,expected_id=None):
         with self.lock:
+            if status in {'APPROVED','ACKNOWLEDGED'} and not isinstance(expected_id,str):
+                raise LiveError('RECOMMENDATION_ID_REQUIRED')
+            if self.route_request and status in {'APPROVED','ACKNOWLEDGED'}:
+                self.reassess('PRE_APPROVAL_VALIDATION')
+            if expected_id is not None and (not self.current or self.current['id']!=expected_id):
+                raise LiveError('RECOMMENDATION_CHANGED_REVIEW_AGAIN')
             allowed={'PENDING_OPERATOR_REVIEW':{'APPROVED','CANCELLED'},'APPROVED':{'ACKNOWLEDGED','CANCELLED'},'ACKNOWLEDGED':{'ARRIVAL_REPORTED','CANCELLED'}}
             if not self.current or status not in allowed.get(self.current['status'],set()):
                 raise LiveError('INVALID_RECOMMENDATION_TRANSITION')

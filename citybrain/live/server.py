@@ -173,7 +173,9 @@ def make_server(service=None,credentials=None,port=8784):
                 if path=='/api/live/recommend':
                     return self.reply(service.recommend(body))
                 if path=='/api/live/transition':
-                    return self.reply(service.transition(body.get('status')))
+                    if not isinstance(body.get('recommendation_id'),str):
+                        raise LiveError('RECOMMENDATION_ID_REQUIRED')
+                    return self.reply(service.transition(body.get('status'),body['recommendation_id']))
                 if path=='/api/live/delete':
                     key=body.get('id')
                     service.verify(key,'RESOLVED') if service.store.get('incidents',key) and service.store.get('incidents',key)['status']=='VERIFIED_FOR_TESTING' else None

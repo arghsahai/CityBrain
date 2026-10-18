@@ -37,7 +37,7 @@ def test_vertical_slice_and_operator_lifecycle(service):
     assert r['estimated_edges']>0
     assert set(r['agents'])=={'ambulance','hospital','traffic','police','signal'}
     for state in ['APPROVED','ACKNOWLEDGED','ARRIVAL_REPORTED']:
-        assert service.transition(state)['status']==state
+        assert service.transition(state,service.current['id'])['status']==state
     assert service.route_request is None
     assert service.state()['incidents']==[]
     assert service.state()['recommendation'] is None
@@ -70,7 +70,7 @@ def test_validation_duplicate_and_no_gps(service):
 def test_position_changes_reassess_current_position(service):
     _,request=configured(service)
     first=service.recommend(request)
-    service.transition('APPROVED')
+    service.transition('APPROVED',service.current['id'])
     edge=first['route'][2]
     service.position(dict(source='USER_SELECTED',coordinates=service.graph.point_at(edge,.4),edge=edge))
     assert service.current['route'][0]==edge

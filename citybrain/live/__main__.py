@@ -8,6 +8,7 @@ from citybrain.chennai.network import ROOT
 from .server import Credentials,make_server
 from .service import LiveService
 from .store import Store
+from .traffic import OfflineTraffic
 
 
 def main():
@@ -15,6 +16,7 @@ def main():
     parser.add_argument('--mode',choices=['simulation','live'],required=True)
     parser.add_argument('--port',type=int,default=8784)
     parser.add_argument('--database',default=str(Path.home()/'.local/share/citybrain/v4/state.sqlite'))
+    parser.add_argument('--traffic-recording',help='Local normalized recording; never a provider request')
     args,remaining=parser.parse_known_args()
     if args.mode=='simulation':
         return subprocess.call([str(ROOT/'tools/run_chennai.sh'),'--mode','simulation',*remaining])
@@ -24,6 +26,7 @@ def main():
         credentials=Credentials(os.environ.get('CITYBRAIN_OPERATOR_TOKEN'),os.environ.get('CITYBRAIN_HOSPITAL_TOKEN'),os.environ.get('CITYBRAIN_HOSPITAL_ID'))
         store=Store(args.database)
         service=LiveService(store=store)
+        service.traffic=OfflineTraffic(service.graph,service.clock,args.traffic_recording)
         server=make_server(service,credentials,args.port)
     except ValueError as error:
         parser.error(str(error))
@@ -37,6 +40,7 @@ def main():
         pass
     finally:
         server.server_close()
+        service.traffic.close()
         store.close()
     return 0
 
