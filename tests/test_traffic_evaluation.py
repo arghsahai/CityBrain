@@ -143,6 +143,7 @@ def test_opt_in_advisor_rejects_disconnected_alternative_and_insufficient_improv
     decision=advisory_route_recommendation(result,routes,'current',NOW,
         edge_successors=topology,current_route_active_since=NOW.replace(hour=11,minute=30),config=small)
     assert decision['action']=='KEEP' and decision['reason']=='INSUFFICIENT_IMPROVEMENT'
+    assert decision['candidate']=='current' and decision['evaluated_candidate']=='alternate'
 
 
 def test_advisor_is_disabled_by_default_and_connectivity_is_fail_closed():

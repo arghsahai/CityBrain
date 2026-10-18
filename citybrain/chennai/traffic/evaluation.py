@@ -243,7 +243,7 @@ def advisory_route_recommendation(evaluation, routes, current_route_id, now, *,
     best_cost = evaluation['adjusted_scores'][best]
     improvement = current_cost - best_cost
     ratio = improvement / max(abs(current_cost), 1.0)
-    candidate = dict(base_result, candidate=best, evidence_used=used,
+    candidate = dict(base_result, evaluated_candidate=best, evidence_used=used,
                      improvement_seconds=improvement, improvement_ratio=ratio)
     if improvement < config.minimum_improvement_seconds or ratio < config.minimum_improvement_ratio:
         return dict(candidate, reason='INSUFFICIENT_IMPROVEMENT')
@@ -258,4 +258,5 @@ def advisory_route_recommendation(evaluation, routes, current_route_id, now, *,
             return dict(candidate, reason='COOLDOWN_PENDING')
     if best in {str(route_id) for route_id in recent_route_ids}:
         return dict(candidate, reason='RECENT_ROUTE_OSCILLATION')
-    return dict(candidate, action='ADVISORY_RECOMMENDATION', reason='ELIGIBLE_EXPERIMENTAL_EVIDENCE')
+    return dict(candidate, action='ADVISORY_RECOMMENDATION', candidate=best,
+                reason='ELIGIBLE_EXPERIMENTAL_EVIDENCE')

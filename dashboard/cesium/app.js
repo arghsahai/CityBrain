@@ -284,7 +284,7 @@ function renderTrafficPanel(state) {
   show('traffic-errors',`Providers: ${Object.entries(external.provider_statuses || {}).map(([p,s])=>p+': '+s.replaceAll('_',' ')).join(' · ')} · API / data errors: ${(external.errors || []).join(', ') || 'none reported'} · Failed polls: ${external.failed_fetches || 0} · Quarantined future timestamps: ${external.quarantine_count || 0}`);
   const experimental=external.experimental_evaluation;
   show('experimental-advisor',experimental
-    ? `${experimental.action || 'UNKNOWN'} · ${experimental.reason || 'Reason unavailable'} · ${experimental.candidate || 'no candidate'} · DISPLAY ONLY; route execution disabled`
+    ? `${experimental.action || 'UNKNOWN'} · ${experimental.reason || 'Reason unavailable'} · ${experimental.candidate || 'no candidate'}${experimental.evaluated_candidate ? ' · considered '+experimental.evaluated_candidate : ''} · DISPLAY ONLY; route execution disabled`
     : 'DISABLED · no experimental recommendation was computed');
   show('experimental-evidence',experimental
     ? JSON.stringify({score_basis:experimental.score_basis,baseline_scores:experimental.baseline_scores,
