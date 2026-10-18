@@ -63,7 +63,10 @@ HEAD at verification. PR #10 remains available at
 [`https://github.com/arghsahai/CityBrain/pull/10`](https://github.com/arghsahai/CityBrain/pull/10).
 Its existing description still reflects V3.0: the Safari GitHub session was
 signed out, and the GitHub connector was unavailable, so its body could not be
-refreshed from this environment. The PR remains Draft and unmerged.
+refreshed from this environment at that time. The subsequent V3.2
+release-readiness audit updated the PR description with V3.1 scope, validation,
+study results and limitations. The PR remains open, Draft and unmerged,
+targeting `main`.
 
 Final validation: **447 pytest tests passed**, all ten legacy compatibility
 scripts passed, and `citybrain.chennai.validate --run` verified the fresh
