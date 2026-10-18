@@ -223,8 +223,15 @@ class LiveService:
                     hospital=dict(reason='RECENT_STAFF_REPORT_AND_REACHABILITY' if hospital else 'NOT_REQUIRED_FOR_FIRST_LEG'))
         agents['traffic'].update(eligible_observations=sum(r.get('eligible_for_routing',False) for r in traffic['observations']),
             route_cost_sources=sorted({c['source'] for c in route['components']}))
-        for row in agents.values():
-            row.update(source='USER_SELECTED / OSM_ESTIMATE / OFFLINE_TEST',updated_at=self.iso(),
+        sources=dict(ambulance='USER_SELECTED',traffic=traffic['source'],
+            hospital='STAFF_REPORTED' if hospital else 'UNAVAILABLE',
+            police='PUBLIC_TEST_REPORT',signal='OSM_IMPORTED_JUNCTIONS')
+        source_times=dict(ambulance=self.ambulance['updated_at'],
+            traffic=sorted({r['observation_timestamp'] for r in traffic['observations'] if r.get('eligible_for_routing') and r.get('observation_timestamp')}),
+            hospital=hospital['status']['updated_at'] if hospital else None,
+            police=incident['created_at'],signal=None)
+        for name,row in agents.items():
+            row.update(source=sources[name],source_updated_at=source_times[name],assessment_at=self.iso(),
                 validity='PROTOTYPE_ADVISORY',missing='No field validation or authorized operational integration')
         return dict(route,incident_id=incident['id'],leg=body['leg'],hospital=hospital,
             position=self.ambulance['position'],agents=agents,traffic_source=traffic['source'])

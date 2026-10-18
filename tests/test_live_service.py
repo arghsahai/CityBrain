@@ -136,3 +136,15 @@ def test_reassessment_history_deduplicates_polling(service):
         service.state(True)
     assert len(service.history)==2
     assert service.history[0]['action']=='RECOMMENDED'
+
+
+def test_agent_sources_do_not_claim_unavailable_traffic_or_capacity(service):
+    _,request=configured(service)
+    agents=service.recommend(request)['agents']
+    assert agents['traffic']['source']=='UNAVAILABLE'
+    assert agents['traffic']['source_updated_at']==[]
+    assert agents['ambulance']['source']=='USER_SELECTED'
+    assert agents['hospital']['source']=='UNAVAILABLE'
+    assert agents['hospital']['source_updated_at'] is None
+    assert agents['signal']['source_updated_at'] is None
+    assert all(a['assessment_at'] for a in agents.values())
