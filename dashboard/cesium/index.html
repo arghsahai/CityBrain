@@ -4,6 +4,7 @@
 <script src="/vendor/Cesium/Cesium.js" defer></script><script src="/app.js" defer></script></head>
 <body>
 <header><div class="brand"><b class="logo">C<span>+</span></b><div><h1>CITYBRAIN <em>RESEARCH PROTOTYPE</em></h1><p>CHENNAI DIGITAL TWIN · VIT STUDY CORRIDOR</p></div></div><div class="status"><i></i><span id="status">CONNECTING</span><small id="mode">READ-ONLY OPERATIONS VIEW</small></div></header>
+<nav aria-label="Operating mode" style="padding:10px 20px"><strong>SIMULATION MODE</strong> · <a style="color:#70e3d5" href="http://127.0.0.1:8784">LIVE DATA MODE / Report Accident (separate local service)</a></nav>
 <main><section class="map-area"><div id="map" aria-label="Interactive geographical map"></div><svg id="fallback" role="img" aria-label="2D geographical fallback" hidden></svg>
 <div class="map-title"><span class="eyebrow">EMERGENCY RESPONSE COORDINATION</span><h2>Real roads. Simulated response.</h2><p id="geography-status">Loading OpenStreetMap geometry…</p></div>
 <nav class="map-controls" aria-label="Map controls"><button id="home">Study area</button><button id="follow">Follow ambulance</button><button id="imagery">OSM basemap</button><button id="flat">2D / 3D</button></nav>
