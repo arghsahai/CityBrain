@@ -1,0 +1,102 @@
+{
+  "code_revision": "d6214286cf7503633d1f18d5aebf1d4539e2e18d",
+  "base_revision": "aa3a57fc1edd35f1a7cf257a8a9eeec3ad1dbf06",
+  "baseline_pytest": {
+    "passed": 447,
+    "seconds": 33.95
+  },
+  "final_pytest": {
+    "passed": 478,
+    "seconds": 36.15,
+    "v4_tests": 31
+  },
+  "compatibility_scripts_passed": 10,
+  "simulation": {
+    "terminal_outcome": "SUCCESS",
+    "arrival_time": 704.0,
+    "dispatch_time": 51.0,
+    "travel_time": 653.0,
+    "route_changes": 0,
+    "maximum_vehicle_offset_from_edge_centerline_m": 1.7814081507793178
+  },
+  "replay": {
+    "terminal_outcome": "SUCCESS",
+    "arrival_time": 704.0,
+    "dispatch_time": 51.0,
+    "travel_time": 653.0,
+    "route_changes": 0,
+    "maximum_vehicle_offset_from_edge_centerline_m": 1.7814081507793178
+  },
+  "historical": {
+    "expected": 2172,
+    "actual": 2172,
+    "missing": [],
+    "extra": [],
+    "hash_mismatches": [],
+    "size_mismatches": []
+  },
+  "v31_study": {
+    "files": 426,
+    "unchanged": true,
+    "mismatches": []
+  },
+  "live_cli": {
+    "no_simulator_child": true,
+    "assets_200": true,
+    "shutdown_exit": 0,
+    "offline_closure_sequence": [
+      1,
+      0,
+      1
+    ],
+    "future_quarantined": true,
+    "outage_contained": true
+  },
+  "browser": {
+    "observed_first_slice": "Chrome: TEST submission, operator verification, USER_SELECTED snap, 70-edge estimated recommendation, SVG geometry/markers",
+    "chrome_3d": "WebGL initialization failure; fallback retained",
+    "safari": "Cesium viewer startup observed; full isolated interaction matrix not completed",
+    "final_matrix": "NOT_TESTED: final 3D alignment, visual closure/future recovery, exact mobile dimensions, citywide imagery, geolocation consent, hospital UI, logout race"
+  },
+  "providers": {
+    "requests_authorized": false,
+    "requests_made": false,
+    "genuine_coverage_verified": false
+  },
+  "signal_priority": "ADVISORY_ONLY \u2014 both intersections fail explicit actuation safety prerequisites",
+  "protected_scope_unchanged": true,
+  "artifacts": {
+    "baseline": {
+      "local_path": "/tmp/citybrain-v4-baseline-pytest.log",
+      "sha256": "be1bbb98a7d90487f4eedb9f263f34b43a7ed8dcd40063a8030fc3dcdc1dbaea"
+    },
+    "full_pytest": {
+      "local_path": "/tmp/citybrain-v4-complete-pytest.log",
+      "sha256": "d1e8c64d74da5b2611746645fb74db478cb6cf2fa42077aaa7fe8b2d0722927a"
+    },
+    "compatibility": {
+      "local_path": "/tmp/citybrain-v4-compatibility.log",
+      "sha256": "40b5f2a0f9b43ea420bbccb704fc8d2e39371b373c0d56e9357a88a345d13f31"
+    },
+    "simulation": {
+      "local_path": "/tmp/citybrain-v4-regression-validation.json",
+      "sha256": "7cabbe00710a789c8f8614f5360932e507907527b5bd33e048c362fd8bfe3ab1"
+    },
+    "replay": {
+      "local_path": "/tmp/citybrain-v4-regression-replay-validation.json",
+      "sha256": "eb3d992e91e28680e6adb54e4502f96d806e540198cdf2b2d3fba5e6a379bf97"
+    },
+    "study_integrity": {
+      "local_path": "/tmp/citybrain-v4-study-integrity.json",
+      "sha256": "03a9fcb811b5f0b748bb2bdfe2def8a6b9793dff5c6de993c469a69076b13023"
+    },
+    "signal_audit": {
+      "local_path": "/tmp/citybrain-v4-signal-audit.json",
+      "sha256": "78b45a67098699e789f6e7049bd379476a934c59356979b0cfbbedc7d9f2ec6e"
+    },
+    "cli": {
+      "local_path": "/tmp/citybrain-v4-cli-verification.json",
+      "sha256": "ac15a0ec4609188167345f979105c6a785b1ab393a4716736a9be30868ea8968"
+    }
+  }
+}
