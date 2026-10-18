@@ -1,0 +1,206 @@
+{
+  "protocol_id": "v31-matched-sumo-10seed-20261018",
+  "trials": 60,
+  "outcomes": {
+    "S05/static": {
+      "n": 10,
+      "successes": 7,
+      "success_rate": 0.7,
+      "success_wilson95": [
+        0.39677814746114537,
+        0.8922087325936989
+      ],
+      "teleports": 3,
+      "teleport_rate": 0.3,
+      "teleport_wilson95": [
+        0.10779126740630099,
+        0.6032218525388546
+      ],
+      "outcomes": {
+        "SUCCESS": 7,
+        "TELEPORTED": 3
+      },
+      "successful_response_time_n": 7,
+      "successful_response_time_mean": 35.0,
+      "successful_response_time_median": 35.0,
+      "successful_response_time_min": 35.0,
+      "successful_response_time_max": 35.0,
+      "mean_route_changes": 0.0,
+      "mean_planner_computation_ms": 0.3025916957994923,
+      "mean_replan_checks": 0.0
+    },
+    "S05/dynamic": {
+      "n": 10,
+      "successes": 10,
+      "success_rate": 1.0,
+      "success_wilson95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "teleports": 0,
+      "teleport_rate": 0.0,
+      "teleport_wilson95": [
+        0,
+        0.2775327998628892
+      ],
+      "outcomes": {
+        "SUCCESS": 10
+      },
+      "successful_response_time_n": 10,
+      "successful_response_time_mean": 35.0,
+      "successful_response_time_median": 35.0,
+      "successful_response_time_min": 35.0,
+      "successful_response_time_max": 35.0,
+      "mean_route_changes": 0.3,
+      "mean_planner_computation_ms": 6.935078205424361,
+      "mean_replan_checks": 27.9
+    },
+    "S06/static": {
+      "n": 10,
+      "successes": 0,
+      "success_rate": 0.0,
+      "success_wilson95": [
+        0,
+        0.2775327998628892
+      ],
+      "teleports": 10,
+      "teleport_rate": 1.0,
+      "teleport_wilson95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "outcomes": {
+        "TELEPORTED": 10
+      },
+      "successful_response_time_n": 0,
+      "successful_response_time_mean": null,
+      "successful_response_time_median": null,
+      "successful_response_time_min": null,
+      "successful_response_time_max": null,
+      "mean_route_changes": 0.0,
+      "mean_planner_computation_ms": 0.2589291980257258,
+      "mean_replan_checks": 0.0
+    },
+    "S06/dynamic": {
+      "n": 10,
+      "successes": 0,
+      "success_rate": 0.0,
+      "success_wilson95": [
+        0,
+        0.2775327998628892
+      ],
+      "teleports": 10,
+      "teleport_rate": 1.0,
+      "teleport_wilson95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "outcomes": {
+        "TELEPORTED": 10
+      },
+      "successful_response_time_n": 0,
+      "successful_response_time_mean": null,
+      "successful_response_time_median": null,
+      "successful_response_time_min": null,
+      "successful_response_time_max": null,
+      "mean_route_changes": 1.7,
+      "mean_planner_computation_ms": 64.96379902237095,
+      "mean_replan_checks": 325.6
+    },
+    "S08/static": {
+      "n": 10,
+      "successes": 0,
+      "success_rate": 0.0,
+      "success_wilson95": [
+        0,
+        0.2775327998628892
+      ],
+      "teleports": 10,
+      "teleport_rate": 1.0,
+      "teleport_wilson95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "outcomes": {
+        "TELEPORTED": 10
+      },
+      "successful_response_time_n": 0,
+      "successful_response_time_mean": null,
+      "successful_response_time_median": null,
+      "successful_response_time_min": null,
+      "successful_response_time_max": null,
+      "mean_route_changes": 0.0,
+      "mean_planner_computation_ms": 0.35273340035928413,
+      "mean_replan_checks": 0.0
+    },
+    "S08/dynamic": {
+      "n": 10,
+      "successes": 10,
+      "success_rate": 1.0,
+      "success_wilson95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "teleports": 0,
+      "teleport_rate": 0.0,
+      "teleport_wilson95": [
+        0,
+        0.2775327998628892
+      ],
+      "outcomes": {
+        "SUCCESS": 10
+      },
+      "successful_response_time_n": 10,
+      "successful_response_time_mean": 124.5,
+      "successful_response_time_median": 124.5,
+      "successful_response_time_min": 124.0,
+      "successful_response_time_max": 125.0,
+      "mean_route_changes": 1.4,
+      "mean_planner_computation_ms": 33.58264249982312,
+      "mean_replan_checks": 114.2
+    }
+  },
+  "paired": {
+    "S05": {
+      "successful_pairs": 7,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": 0.0,
+      "response_median_difference": 0.0,
+      "response_difference_bootstrap95": [
+        0.0,
+        0.0
+      ]
+    },
+    "S06": {
+      "successful_pairs": 0,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": null,
+      "response_median_difference": null,
+      "response_difference_bootstrap95": null
+    },
+    "S08": {
+      "successful_pairs": 0,
+      "response_difference_definition": "static minus dynamic; seconds",
+      "response_mean_difference": null,
+      "response_median_difference": null,
+      "response_difference_bootstrap95": null
+    }
+  },
+  "provenance": {
+    "source": "SUMO_SIMULATED",
+    "provider_observations_used": false,
+    "traffic_evaluator_arm_included": false,
+    "route_execution_readback": "NOT MEASURED BY THIS LEGACY COMPARISON RUNNER",
+    "signals": "SIMULATED; NO PRIORITY ACTUATION",
+    "gps": "NO RUNTIME GPS INPUT",
+    "initial_trial_revision": "08e5ac8b110dd22f28bb5af9225289f855f38623",
+    "aggregation_fix_revision": "9e1a9be610f3172c5185b61f4caad063c8309cb4",
+    "trial_resume_revision": null
+  },
+  "limitations": [
+    "10 matched seeds per scenario; one normal-demand profile and fixed synthetic inputs.",
+    "Results do not test live traffic, the experimental traffic advisor, signal priority or GPS.",
+    "Successful response-time summaries condition on SUCCESS; failures remain in completion denominators.",
+    "N=10 intervals are broad; these scenario results do not establish general superiority or real-world performance."
+  ]
+}

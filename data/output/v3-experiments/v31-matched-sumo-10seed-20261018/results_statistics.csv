@@ -1,0 +1,7 @@
+scenario,profile,strategy,n,success_count,success_rate,failure_count,failure_rate,teleport_count,teleport_rate,travel_mean,travel_median,travel_sd,travel_min,travel_max
+S05,normal,dynamic,10,10,1.0,0,0.0,0,0.0,34.0,34.0,0.0,34.0,34.0
+S05,normal,static,10,7,0.7,3,0.3,3,0.3,34.0,34.0,0.0,34.0,34.0
+S06,normal,dynamic,10,0,0.0,10,1.0,10,1.0,,,,,
+S06,normal,static,10,0,0.0,10,1.0,10,1.0,,,,,
+S08,normal,dynamic,10,10,1.0,0,0.0,0,0.0,123.5,123.5,0.5270462766947299,123.0,124.0
+S08,normal,static,10,0,0.0,10,1.0,10,1.0,,,,,
