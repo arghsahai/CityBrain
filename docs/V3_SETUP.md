@@ -1,4 +1,4 @@
-# CityBrain V3.0 prototype setup
+# CityBrain current prototype setup
 
 ## Local prerequisites
 
@@ -55,3 +55,5 @@ The launcher owns the SUMO child and local dashboard, catches interrupts and
 closes its TraCI connection and server. `--exit-on-complete` is intended for
 automation; without it, the browser server remains available after a completed
 run until Ctrl-C. No launcher mode silently authorizes provider requests.
+
+Current QA used Python 3.13.5, SUMO 1.27.1 and Chrome 155 on macOS. The POSIX launcher is tested here; a fresh installation on another operating system is not claimed. See the repository README for the separate saved S08 replanning demonstration.

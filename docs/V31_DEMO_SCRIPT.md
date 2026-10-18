@@ -1,3 +1,7 @@
+# Current demonstration entry points
+
+Use [FINAL_DEMO_CHECKLIST.md](../deliverables/final-academic-submission/FINAL_DEMO_CHECKLIST.md) for the five-minute Demo A + Demo B procedure and two-minute fallback. Chennai seed-17 SUCCESS has zero route changes; the separately verified saved S08 grid replay demonstrates P0 → P1 → P2. The detailed V3.1 sidecar walkthrough below remains valid.
+
 # CityBrain V3.1 faculty demonstration
 
 ## Main demonstration (about 6 minutes)

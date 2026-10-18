@@ -1,3 +1,7 @@
+# Historical V3.0 implementation checkpoint
+
+This document preserves the earlier V3.0 checkpoint. The completed V3.1 study and final QA supersede its remaining-work list; consult [current final status](FINAL_PROJECT_STATUS.md). Signal control and runtime GPS remain deliberately out of scope, not required completion tasks.
+
 # CityBrain V3.0 implementation status
 
 ## Implemented in the current feature branch

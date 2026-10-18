@@ -1,4 +1,4 @@
-# CityBrain V3.0 prototype architecture
+# CityBrain current prototype architecture
 
 ## Runtime and data flow
 
@@ -15,8 +15,8 @@ flowchart LR
   CACHE --> TELEMETRY
   TELEMETRY --> SERVER[Local read-only dashboard server]
   SERVER --> CESIUM[Cesium or SVG fallback]
-  TRAFFIC -. offline experiment only .-> EVAL[Opt-in candidate evaluator]
-  EVAL -. comparison output only .-> EXP[Controlled experiment harness]
+  CACHE --> EVAL[Opt-in display-only candidate advisor]
+  EVAL --> TELEMETRY
   DEVICE[User-consented browser location] --> LOCAL[Browser memory and local map match]
   LOCAL -. no server upload or planner input .-> CESIUM
 ```
@@ -44,3 +44,5 @@ the tab and never enters the runtime.
 
 Unknown, stale, expired, unmatched and ambiguous evidence remains visibly distinct.
 No genuine provider response was obtained during this implementation.
+
+The separate V3.1 60-trial comparison evaluates the legacy static/dynamic harness, not the display-only advisor. See [current final status](FINAL_PROJECT_STATUS.md).

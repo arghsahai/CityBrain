@@ -1,3 +1,7 @@
+# V3.1 implementation record — historical milestones preserved
+
+For current QA, PR state, final deliverables and separate normal/replanning demo paths, see [FINAL_PROJECT_STATUS.md](FINAL_PROJECT_STATUS.md). PR status statements below are dated milestone observations; PR #10 remains Draft and unmerged at final QA.
+
 # CityBrain V3.1 implementation report
 
 Date: 2026-10-18. This report describes a software research prototype, not an

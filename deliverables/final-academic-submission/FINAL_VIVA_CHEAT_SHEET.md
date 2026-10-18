@@ -67,7 +67,7 @@ No. It displays SUMO phase/link telemetry and advisory suggestions. Physical act
 The simulated ambulance reached its configured hospital access road. It does not prove driveway access, clinical capacity, admission or service availability.
 
 **What validation exists?**
-The recorded V3.1 validation reports 447 passing pytest tests, ten passing compatibility scripts, fresh simulation/replay smokes, browser replay checks, and 2,172/2,172 historical manifest entries verified. The V3.2 submission package adds document, PDF and presentation rendering checks without changing runtime behavior or regenerating the study.
+The recorded V3.1 validation reports 447 passing pytest tests, ten passing compatibility scripts, fresh simulation/replay smokes, browser replay checks, and 2,172/2,172 historical manifest entries verified. Final QA reran 447 tests (38.38 seconds), all ten compatibility scripts, fresh normal/replay smokes and browser checks; historical evidence and the V3.1 study remain unchanged. Dashboard clarity fixes do not alter runtime control behavior.
 
 **Why is it not production-ready?**
 It lacks live-provider coverage validation, real-world calibration, physical signal control contracts, verified hospital services, field testing, multi-emergency coordination, a safety case, and operational security/privacy review.
@@ -83,3 +83,19 @@ Calibrated local data; validated provider contracts and costs; municipal and hos
 - **External providers:** adapters implemented; actual provider coverage/accuracy unverified.
 - **Arrival:** simulated access-road condition only.
 - **Signals:** simulated telemetry, advisory recommendations, no physical actuation.
+
+## Additional final-review questions
+
+**What is a digital twin here?** A geographically anchored simulation and observed-state visualization of the chosen road corridor. Traffic and operations are simulated, so it is not a calibrated live replica of Chennai.
+
+**Why OpenStreetMap?** It supplies reproducible road geometry and geographic context under its attribution/license terms; it does not supply live congestion.
+
+**How do agents communicate?** The runtime adapts shared Core state into planner context. The planner invokes structured assessments and recommendations; this is modular software coordination, not independent networked AI services.
+
+**What is different from Google Maps?** CityBrain is a controlled research simulation with inspectable agents, route execution/read-back and experiments. No comparison establishes better routing than a commercial navigation product.
+
+**Does accident detection use a camera?** No. Events are configured/injected in simulation. There is no image-based detection or real camera feed.
+
+**Which demo proves an applied replan?** The verified saved synthetic S08 grid archive: P0/P1/P2 at 301/311/316 s and SUCCESS at 425 s. The Chennai seed-17 run reaches SUCCESS at 704 s with zero route changes. The two runs must not be spliced or confused.
+
+**Are original S08 input hashes revalidated?** The archive checksum, saved execution evidence and retained network geometry are verified. Generated input-file hashes are recorded but cannot be recomputed because those input files are not in the compact archive.

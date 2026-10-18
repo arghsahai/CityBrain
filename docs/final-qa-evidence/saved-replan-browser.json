@@ -1,0 +1,27 @@
+{
+  "states": [
+    {
+      "time": 301,
+      "plan": "EM-001-P0",
+      "verification": "VERIFIED"
+    },
+    {
+      "time": 311,
+      "plan": "EM-001-P1",
+      "verification": "VERIFIED"
+    },
+    {
+      "time": 316,
+      "plan": "EM-001-P2",
+      "verification": "VERIFIED"
+    },
+    {
+      "time": 425,
+      "plan": "EM-001-P2",
+      "verification": "VERIFIED"
+    }
+  ],
+  "errors": [],
+  "browser": "155.0.8059.80",
+  "source": "SAVED SYNTHETIC S08 GRID \u2014 not Chennai"
+}

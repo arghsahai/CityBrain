@@ -1,0 +1,50 @@
+{
+  "source": "SAVED_SYNTHETIC_S08_GRID_DEMO",
+  "archive": "docs/krishna/s08-3d-demo-evidence.tar.gz",
+  "archive_sha256": "c7d53a707541f39baee33ee2258038c854adf34ceb14c72f680177a39980e834",
+  "events_sha256": "e9df22f6c87f875a470f4b7464de15db81ec5f6133786ef295d856b693514758",
+  "source_revision": "f2fb49f0e1a5d1ead6ee48d4be0024074914537c",
+  "records": 748,
+  "accepted": [
+    {
+      "plan_id": "EM-001-P0",
+      "time": 301.0,
+      "revision": 0,
+      "route": [
+        "E13",
+        "E5",
+        "E7",
+        "E23"
+      ]
+    },
+    {
+      "plan_id": "EM-001-P1",
+      "time": 311.0,
+      "revision": 1,
+      "route": [
+        "E5",
+        "E19",
+        "E11"
+      ]
+    },
+    {
+      "plan_id": "EM-001-P2",
+      "time": 316.0,
+      "revision": 2,
+      "route": [
+        "E5",
+        "E19",
+        "E27",
+        "E33",
+        "E30"
+      ]
+    }
+  ],
+  "route_changes": 2,
+  "outcome": "SUCCESS",
+  "arrival_time": 425.0,
+  "travel_time": 124.0,
+  "geometry_matches_current_network": true,
+  "original_generated_input_hashes": "PRESERVED, NOT RECOMPUTABLE FROM THIS ARCHIVE",
+  "chennai_guard": "NOT A TEST OF THE CHENNAI 20-SECOND GUARD"
+}

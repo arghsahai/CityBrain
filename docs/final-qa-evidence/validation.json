@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-18",
+  "platform": "macOS arm64",
+  "python": "3.13.5",
+  "sumo": "1.27.1",
+  "chrome": "155.0.8059.80",
+  "source_milestone": "e3b315b5d95beecd5cbdec57dca5847994c8785a",
+  "smoke_provenance_revision": "199be416add42b2fbaa2933978a47e1a67cc6eb0",
+  "smoke_working_tree_clean_at_start": true,
+  "pytest": {
+    "passed": 447,
+    "failed": 0,
+    "seconds": 38.38
+  },
+  "compatibility": {
+    "passed": 10,
+    "failed": 0
+  },
+  "historical": {
+    "expected": 2172,
+    "actual": 2172,
+    "missing": [],
+    "extra": [],
+    "hash_mismatches": [],
+    "size_mismatches": []
+  },
+  "v31_study": {
+    "cells": 60,
+    "files_hashed_and_unchanged": 426,
+    "raw_data_regenerated": false
+  },
+  "provider_requests": 0,
+  "normal_demo": {
+    "arrival_s": 704,
+    "dispatch_s": 51,
+    "travel_s": 653,
+    "route_changes": 0
+  },
+  "replanning_demo": {
+    "source": "saved synthetic S08 grid",
+    "accepted_at_s": [
+      301,
+      311,
+      316
+    ],
+    "arrival_s": 425,
+    "travel_s": 124,
+    "route_changes": 2,
+    "original_input_hashes": "preserved, not recomputable from compact archive"
+  },
+  "replay_restart_same_port": "PASS",
+  "runtime_output_directory": "/var/folders/3n/ckrg856x3cj929x8_cv1mvgw0000gn/T/citybrain-final-qa-0_am1xi_",
+  "artifacts": "see FINAL_PROJECT_STATUS.md; updated and rendered separately",
+  "interactive_launcher": {
+    "url_responded": true,
+    "completed": "SUCCESS",
+    "terminal_time": 704,
+    "shutdown_exit_code": 0,
+    "ports_released": [
+      8797,
+      8798,
+      8799
+    ]
+  },
+  "warnings": [
+    "SUMO emitted Cannot find proj.db three times per run; non-fatal. Independent pyproj round-trip/centreline audit passed. Fresh installation on another laptop remains untested."
+  ],
+  "artifact_validation": {
+    "pptx_slides": 12,
+    "docx_numbered_sections": 20,
+    "docx_images": 2,
+    "pdf_pages": 10,
+    "clickable_external_references": 15,
+    "toc_page_numbers_match_pdf": true,
+    "pptx_overflow_test": "PASS",
+    "all_local_markdown_links_exist": true
+  },
+  "artifact_sha256": {
+    "FINAL_VIVA_CHEAT_SHEET.md": "6a1d0fbf958fd5450cc979779b3c5009fd739be276031104b69c8413318d632a",
+    "CityBrain_Final_Demo_Screenshot.png": "08eebeafa5d4d06c489f3dc6932aa482bfa809029e08e50fc8b6352e92a56cca",
+    "CityBrain_Final_Presentation.pptx": "c256ad31ad5099bf09fcba64a2d562fd1bd212e6205b9774815983e0da63ba1f",
+    "CityBrain_Replanning_Demo_Screenshot.png": "3eba32bdb79dffb44f4fbec424e09226be618e6cd414f06c9c4ed36782457fa3",
+    "CityBrain_Final_Project_Report.docx": "79ac39ca7089bab0064f02a039f7441fbc9a63fb9ec7576fc0803ea65994a542",
+    "CityBrain_Final_Project_Report.pdf": "42ee07b558107c310c4c7f1502ef38f3f8d1b6662c911c70dc600eaaef160ff6",
+    "FINAL_DEMO_CHECKLIST.md": "e9660ac619a571207487c327f2a53c3c3431440919e3a9c6c17538f75bdadd3a"
+  }
+}
