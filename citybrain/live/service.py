@@ -43,6 +43,18 @@ class LiveService:
             last_verified_at=None,destination_edge=h['destination_edge'],
             road_access='ROAD LEVEL ONLY — entrance and final driveway unverified') for h in raw]
 
+    def record_history(self,action,reason,route=None):
+        entry=dict(at=self.iso(),action=action,reason=reason)
+        if route is not None:
+            entry['route']=route
+        if self.history:
+            previous=self.history[-1]
+            age=(self.clock()-datetime.fromisoformat(previous['at'])).total_seconds()
+            if age<60 and all(previous.get(k)==entry.get(k) for k in ('action','reason','route')):
+                return
+        self.history.append(entry)
+        self.history=self.history[-50:]
+
     def now(self):
         return self.clock().timestamp()
 
@@ -61,7 +73,7 @@ class LiveService:
             if not self.graph.in_bounds(point):
                 raise LiveError('OUTSIDE_ROUTING_PILOT')
             kind=body.get('type')
-            if kind not in {'ROAD_COLLISION','ROAD_HAZARD','OTHER_TEST'}:
+            if not isinstance(kind,str) or kind not in {'ROAD_COLLISION','ROAD_HAZARD','OTHER_TEST'}:
                 raise LiveError('INVALID_INCIDENT_TYPE')
             description=text(body.get('description',''),300)
             for old in self.store.rows('incidents'):
@@ -77,6 +89,7 @@ class LiveService:
     def verify(self,key,status,actor='operator'):
         with self.lock:
             self.store.prune(self.now())
+            key=text(key,64,required=True)
             row=self.store.get('incidents',key)
             if row is None:
                 raise LiveError('INCIDENT_NOT_FOUND')
@@ -151,7 +164,7 @@ class LiveService:
 
     def _compute(self,body):
         self.store.prune(self.now())
-        incident=self.store.get('incidents',body.get('incident_id',''))
+        incident=self.store.get('incidents',text(body.get('incident_id',''),64,required=True))
         if not incident or incident['status']!='VERIFIED_FOR_TESTING':
             raise LiveError('VERIFIED_TEST_INCIDENT_REQUIRED')
         emergency=Emergency(incident['id'],'TEST_INCIDENT','TEST',incident['type'])
@@ -175,7 +188,7 @@ class LiveService:
             choices=[]
             for h in self.hospitals():
                 status=h['status']
-                if (not status or status['accepting'] is not True or status['beds']==0 or
+                if (not status or status['accepting'] is not True or status['beds'] is None or status['beds']<=0 or
                     body.get('require_trauma') and status['trauma'] is not True or
                     body.get('require_icu') and status['icu'] is not True):
                     continue
@@ -219,8 +232,7 @@ class LiveService:
     def _accept_candidate(self,result,reason):
         self.current=dict(result,id=secrets.token_hex(8),status='PENDING_OPERATOR_REVIEW',reason=reason,updated_at=self.iso())
         self.last_change=self.now()
-        self.history.append(dict(at=self.iso(),action='RECOMMENDED',reason=reason,route=result['route']))
-        self.history=self.history[-50:]
+        self.record_history('RECOMMENDED',reason,result['route'])
         return self.current
 
     def reassess(self,trigger='TRAFFIC_CHANGED',force=False):
@@ -231,8 +243,7 @@ class LiveService:
                 candidate=self._compute(self.route_request)
             except LiveError as error:
                 self.current=dict(self.current or {},status='UNAVAILABLE',reason=error.code,updated_at=self.iso())
-                self.history.append(dict(at=self.iso(),action='UNAVAILABLE',reason=error.code))
-                self.history=self.history[-50:]
+                self.record_history('UNAVAILABLE',error.code)
                 return self.current
             old=self.current
             # Re-score the current route with CURRENT data before comparing;
@@ -253,15 +264,20 @@ class LiveService:
                 status='PENDING_OPERATOR_REVIEW' if inputs_changed else old['status']
                 self.current=dict(old,**candidate,id=secrets.token_hex(8) if inputs_changed else old['id'],status=status,reason='KEEP_SAME_VALID_ROUTE',updated_at=self.iso())
             else:
-                self.current.update(status='PENDING_OPERATOR_REVIEW',reason='KEEP_COOLDOWN_OR_INSUFFICIENT_IMPROVEMENT',eta_seconds=old_seconds)
+                previous_components=[dict(c) for c in self.current['components']]
+                previous_status=self.current['status']
+                self.current.update(reason='KEEP_COOLDOWN_OR_INSUFFICIENT_IMPROVEMENT',eta_seconds=old_seconds)
                 self.current['traffic_source']=candidate['traffic_source']
                 for c in self.current['components']:
                     row=costs.get(c['edge'],{})
                     c.update(seconds=row.get('seconds',self.graph.edges[c['edge']]['length']/self.graph.edges[c['edge']]['speed'])*c['fraction'],source=row.get('source','ESTIMATED_FREE_FLOW'),freshness=row.get('freshness','UNKNOWN'))
+                if previous_components!=self.current['components']:
+                    self.current.update(id=secrets.token_hex(8),status='PENDING_OPERATOR_REVIEW')
+                else:
+                    self.current['status']=previous_status
                 self.current['estimated_edges']=sum(c['source']=='ESTIMATED_FREE_FLOW' for c in self.current['components'])
                 self.current['observed_edges']=len(self.current['components'])-self.current['estimated_edges']
-            self.history.append(dict(at=self.iso(),action='KEEP',reason=self.current['reason']))
-            self.history=self.history[-50:]
+            self.record_history('KEEP',self.current['reason'])
             return self.current
 
     def transition(self,status,expected_id=None):

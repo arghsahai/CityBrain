@@ -118,3 +118,21 @@ def test_retention_limits_and_deletion(tmp_path):
     store.prune(90000)
     assert store.rows('audit')==[]
     store.close()
+
+
+def test_unknown_beds_cannot_become_hospital_capacity(service):
+    incident,request=configured(service)
+    edge=request['incident_edge']
+    service.position(dict(source='USER_SELECTED',coordinates=service.graph.point_at(edge,.5),edge=edge))
+    service.hospital_update(service.directory[0]['id'],dict(accepting=True,icu=True),'facility')
+    with pytest.raises(LiveError,match='NO_RECENT_SUITABLE_REACHABLE_HOSPITAL'):
+        service.recommend(dict(request,leg='INCIDENT_TO_HOSPITAL',incident_arrival_confirmed=True))
+
+
+def test_reassessment_history_deduplicates_polling(service):
+    _,request=configured(service)
+    service.recommend(request)
+    for _ in range(100):
+        service.state(True)
+    assert len(service.history)==2
+    assert service.history[0]['action']=='RECOMMENDED'

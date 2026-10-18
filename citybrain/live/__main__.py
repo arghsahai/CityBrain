@@ -14,12 +14,12 @@ from .traffic import OfflineTraffic
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode',choices=['simulation','live'],required=True)
-    parser.add_argument('--port',type=int,default=8784)
+    parser.add_argument('--port',type=int)
     parser.add_argument('--database',default=str(Path.home()/'.local/share/citybrain/v4/state.sqlite'))
     parser.add_argument('--traffic-recording',help='Local normalized recording; never a provider request')
     args,remaining=parser.parse_known_args()
     if args.mode=='simulation':
-        return subprocess.call([str(ROOT/'tools/run_chennai.sh'),'--mode','simulation',*remaining])
+        return subprocess.call([str(ROOT/'tools/run_chennai.sh'),'--mode','simulation',*(['--port',str(args.port)] if args.port else []),*remaining])
     if remaining:
         parser.error('Unrecognized live-mode arguments')
     try:
@@ -27,7 +27,7 @@ def main():
         store=Store(args.database)
         service=LiveService(store=store)
         service.traffic=OfflineTraffic(service.graph,service.clock,args.traffic_recording)
-        server=make_server(service,credentials,args.port)
+        server=make_server(service,credentials,args.port if args.port is not None else 8784)
     except ValueError as error:
         parser.error(str(error))
     print(f'CityBrain LIVE DATA prototype: http://127.0.0.1:{server.server_port}',flush=True)
