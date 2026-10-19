@@ -8,6 +8,12 @@ A route may become unsuitable after dispatch. CityBrain evaluates the remaining 
 
 **Current completion evidence:** [Final project status](docs/FINAL_PROJECT_STATUS.md) · [Demo readiness](docs/FINAL_DEMO_READINESS.md) · [Academic submission package](deliverables/final-academic-submission/).
 
+## V4 extension — separate local live-data prototype
+
+V3 below is preserved. The additive [V4 Draft PR #11](https://github.com/arghsahai/CityBrain/pull/11) provides public **test** incident reporting, authenticated local operator review, USER_SELECTED ambulance pins, bounded directed routing, offline traffic reassessment and facility-scoped staff-report testing. It runs without SUMO, has no authorized provider connection, and recommends routes without executing them. This is not an emergency service.
+
+[Setup](docs/V4_LIVE_DATA_SETUP.md) · [Actual status and testing gaps](docs/V4_FEATURE_STATUS.md) · [Architecture](docs/V4_ARCHITECTURE.md) · [Demos](docs/V4_DEMO_SCRIPT.md) · [Security/privacy](docs/V4_SECURITY_AND_PRIVACY.md). The final browser verification matrix is incomplete; the V4 PR remains draft. Do not use it for actual emergency operations.
+
 ## What is implemented
 
 - Chennai-area OSM road geometry and geographic projection, SUMO background vehicles, ambulance movement, simulated incidents, configured hospitals and signal telemetry.
