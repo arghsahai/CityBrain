@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-20",
+  "initial_head": "92031e6d1f23b3423d4e233f6bc40ca557dd8abb",
+  "latest_integrated_base": "4b74028b4712c4f33379b8c54afa80ae37e40ebb",
+  "initial_tree_equal_to_main": true,
+  "pytest_baseline": {
+    "passed": 478,
+    "seconds": 36.52
+  },
+  "pytest_after_regressions": {
+    "passed": 480,
+    "seconds": 39.1
+  },
+  "legacy_scripts_passed": 10,
+  "historical": {
+    "expected": 2172,
+    "actual": 2172,
+    "missing": [],
+    "extra": [],
+    "hash_mismatches": [],
+    "size_mismatches": []
+  },
+  "simulation": {
+    "terminal_outcome": "SUCCESS",
+    "arrival_time": 704.0,
+    "dispatch_time": 51.0,
+    "travel_time": 653.0,
+    "route_changes": 0,
+    "maximum_coordinate_roundtrip_error_degrees": 1.4210854715202004e-14,
+    "maximum_vehicle_offset_from_edge_centerline_m": 1.7814081507793178
+  },
+  "telemetry_failures": 0,
+  "dashboard_write_failures": 0,
+  "browser": {
+    "source": "SYNTHETIC_TEST",
+    "provider_requests": 0,
+    "first_slice": {
+      "status": "PENDING_OPERATOR_REVIEW",
+      "edges": 70,
+      "estimated_edges": 70,
+      "observed_edges": 0
+    },
+    "closure_overlays": [
+      1,
+      0,
+      1
+    ],
+    "future_quarantine_and_recovery": true,
+    "layouts": {
+      "800": "NO_HORIZONTAL_OVERFLOW",
+      "390": "NO_HORIZONTAL_OVERFLOW"
+    },
+    "logout_private_state_cleared": true,
+    "hospital_portal": "FACILITY_SCOPED_STAFF_REPORTED",
+    "cesium_initialized": true,
+    "cesium_road_alignment": "PASS",
+    "cesium_route_alignment": "PASS",
+    "window_errors": {
+      "scene": [],
+      "fallback": []
+    },
+    "http_errors": [],
+    "page_errors": [],
+    "blocked_external_requests": []
+  },
+  "warnings": [
+    "SUMO proj.db lookup warning three times; successful geographic audit",
+    "Initial smoke rejected existing output directory; retried with new child directory"
+  ],
+  "local_evidence": {
+    "simulation": "/tmp/citybrain-v4-baseline-20261020.uLYYlo",
+    "browser": "/tmp/citybrain-v4-browser-20261020.krBsax"
+  },
+  "evidence_sha256": {
+    "/tmp/citybrain-v4-baseline-20261020.uLYYlo/validation.json": "c2ce4b66658a1b49305f78454dada8e94590109d323c21de1e5ba5082aeaf01d",
+    "/tmp/citybrain-v4-baseline-20261020.uLYYlo/run/health.json": "aa20b1d409b955e61db105aa05cb265a223c42560211f5662797a97492e1acb4",
+    "/tmp/citybrain-v4-browser-20261020.krBsax/check/result.json": "c3170fb033ac8861a657cc1830667a956466287b6764efdffedabea3f8500758"
+  },
+  "provider_requests_authorized": false,
+  "official_trials_regenerated": false
+}

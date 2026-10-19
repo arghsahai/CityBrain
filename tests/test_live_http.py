@@ -29,6 +29,7 @@ def api():
         except HTTPError as error:
             response=error
         return response.code,json.loads(response.read())
+    call.base=f'http://127.0.0.1:{server.server_port}'
     yield call,s,facility
     server.shutdown(); server.server_close(); thread.join(); s.store.close()
 
@@ -82,3 +83,19 @@ def test_credential_configuration():
         Credentials(OP,OP,'facility')
     with pytest.raises(ValueError):
         Credentials(OP,HOSP)
+
+
+@pytest.mark.parametrize('asset', [
+    'Assets/approximateTerrainHeights.json',
+    'Assets/IAU2006_XYS/IAU2006_XYS_18.json',
+])
+def test_cesium_static_json_is_served_without_reserialization(api, asset):
+    from citybrain.chennai.network import ROOT
+    call, _, _ = api
+    expected = (ROOT/'dashboard/cesium/vendor/Cesium'/asset).read_bytes()
+    with urlopen(call.base+'/vendor/Cesium/'+asset, timeout=3) as response:
+        assert response.status == 200
+        assert response.headers.get_content_type() == 'application/json'
+        payload = response.read()
+    assert payload == expected
+    assert isinstance(json.loads(payload), dict)

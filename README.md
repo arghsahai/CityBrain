@@ -10,9 +10,9 @@ A route may become unsuitable after dispatch. CityBrain evaluates the remaining 
 
 ## V4 extension — separate local live-data prototype
 
-V3 below is preserved. The additive [V4 Draft PR #11](https://github.com/arghsahai/CityBrain/pull/11) provides public **test** incident reporting, authenticated local operator review, USER_SELECTED ambulance pins, bounded directed routing, offline traffic reassessment and facility-scoped staff-report testing. It runs without SUMO, has no authorized provider connection, and recommends routes without executing them. This is not an emergency service.
+V3 below is preserved. The additive [V4 implementation PR #11 (merged)](https://github.com/arghsahai/CityBrain/pull/11) provides public **test** incident reporting, authenticated local operator review, USER_SELECTED ambulance pins, bounded directed routing, offline traffic reassessment and facility-scoped staff-report testing. It runs without SUMO, has no authorized provider connection, and recommends routes without executing them. This is not an emergency service.
 
-[Setup](docs/V4_LIVE_DATA_SETUP.md) · [Actual status and testing gaps](docs/V4_FEATURE_STATUS.md) · [Architecture](docs/V4_ARCHITECTURE.md) · [Demos](docs/V4_DEMO_SCRIPT.md) · [Security/privacy](docs/V4_SECURITY_AND_PRIVACY.md). The final browser verification matrix is incomplete; the V4 PR remains draft. Do not use it for actual emergency operations.
+[Setup](docs/V4_LIVE_DATA_SETUP.md) · [Actual status and testing gaps](docs/V4_FEATURE_STATUS.md) · [Architecture](docs/V4_ARCHITECTURE.md) · [Demos](docs/V4_DEMO_SCRIPT.md) · [Security/privacy](docs/V4_SECURITY_AND_PRIVACY.md). A new follow-up verifies the offline browser workflow and fixes Cesium display defects; see [20 October synchronization and validation](docs/V4_SYNCHRONIZATION_20261020.md). Remaining browser/operational gates are documented; the follow-up PR stays draft. Do not use it for actual emergency operations.
 
 ## What is implemented
 

@@ -48,6 +48,8 @@ function fallback(){
   useFallback=true;$('map').hidden=true;$('fallback').removeAttribute('hidden');$('flat').textContent='2D fallback active';
   if(viewer){viewer.destroy();viewer=null;}draw();
 }
+// Small display offsets keep ellipsoid chords above the globe; not measured elevations.
+function mapLine(points,height=2){return Cesium.Cartesian3.fromDegreesArrayHeights(points.flatMap(p=>[p[0],p[1],height]));}
 function initializeMap(){
   if(new URLSearchParams(location.search).has('fallback')||!window.Cesium){say('Local 2D fallback selected or Cesium unavailable.');return fallback();}
   const probe=document.createElement('canvas');
@@ -58,7 +60,7 @@ function initializeMap(){
     Cesium.Ion.defaultAccessToken='';
     viewer=new Cesium.Viewer('map',{baseLayer:false,terrainProvider:new Cesium.EllipsoidTerrainProvider(),animation:false,timeline:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,navigationHelpButton:false,fullscreenButton:false,selectionIndicator:false,infoBox:false,requestRenderMode:true});
     viewer.scene.globe.baseColor=Cesium.Color.fromCssColorString('#112333');
-    for(const [id,road] of Object.entries(geo.roads))viewer.entities.add({id:'road-'+id,polyline:{positions:Cesium.Cartesian3.fromDegreesArray(road.coordinates.flat()),width:2,material:Cesium.Color.fromCssColorString('#365464')}});
+    for(const [id,road] of Object.entries(geo.roads))viewer.entities.add({id:'road-'+id,polyline:{positions:mapLine(road.coordinates),width:2,material:Cesium.Color.fromCssColorString('#365464')}});
     viewer.screenSpaceEventHandler.setInputAction(click=>{const ray=viewer.camera.getPickRay(click.position);const picked=ray&&viewer.scene.globe.pick(ray,viewer.scene);if(!picked)return;const p=Cesium.Cartographic.fromCartesian(picked);selectPoint([Cesium.Math.toDegrees(p.longitude),Cesium.Math.toDegrees(p.latitude)]);},Cesium.ScreenSpaceEventType.LEFT_CLICK);
     viewer.camera.setView({destination:Cesium.Rectangle.fromDegrees(...geo.bounds)});
     viewer.scene.renderError.addEventListener(()=>{say('3D unavailable; using local 2D road geometry.');fallback();});
@@ -81,8 +83,8 @@ function draw(){
     if(amb)marker(svg,amb.position.coordinates,'USER_SELECTED','ambulance');if(pin)marker(svg,pin,'Selected pin','incident');
   }else if(viewer){
     dynamic.forEach(e=>viewer.entities.remove(e));dynamic=[];
-    if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)dynamic.push(viewer.entities.add({polyline:{positions:Cesium.Cartesian3.fromDegreesArray(edge.coordinates.flat()),width:6,material:Cesium.Color.fromCssColorString('#39e4cd')}}));
-    for(const row of traffic)if(row.road_geometry?.length>1)dynamic.push(viewer.entities.add({polyline:{positions:Cesium.Cartesian3.fromDegreesArray(row.road_geometry.flat()),width:5,material:Cesium.Color.fromCssColorString(row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0')}}));
+    if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)dynamic.push(viewer.entities.add({polyline:{positions:mapLine(edge.coordinates,4),width:6,material:Cesium.Color.fromCssColorString('#39e4cd')}}));
+    for(const row of traffic)if(row.road_geometry?.length>1)dynamic.push(viewer.entities.add({polyline:{positions:mapLine(row.road_geometry,8),width:5,material:Cesium.Color.fromCssColorString(row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0')}}));
     hospitals.forEach(h=>entityMarker(h.coordinates,h.name,'#79dfad'));incidents.forEach(i=>entityMarker(i.coordinates,'TEST INCIDENT','#ff8a7b'));
     if(amb)entityMarker(amb.position.coordinates,'USER_SELECTED','#ffd570');if(pin)entityMarker(pin,'Selected pin','#ff8a7b');viewer.scene.requestRender();
   }

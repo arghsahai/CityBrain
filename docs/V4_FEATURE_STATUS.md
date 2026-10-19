@@ -1,5 +1,7 @@
 # V4 feature status and verification
 
+**20 October follow-up:** PR #11 is merged. The existing slice was preserved and freshly revalidated: 480 pytest tests, ten compatibility scripts, historical integrity, Chennai SUCCESS 704 s, and repeatable offline SVG/Cesium checks. See [current synchronization report](V4_SYNCHRONIZATION_20261020.md). The text below records the original milestone; its Draft PR and browser gap statements describe that earlier checkpoint.
+
 **Working local test recommendation prototype; not a completed operational emergency-response platform.** No production-readiness or real traffic coverage claim. Draft PR [#11](https://github.com/arghsahai/CityBrain/pull/11), branch `feature/citybrain-v4-live-operations`. PR #10 was already merged before this task; V4 started from that identical-tree merge on main. No PR was merged by this task.
 
 | Milestone | Actual status |
