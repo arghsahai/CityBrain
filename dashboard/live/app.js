@@ -70,14 +70,14 @@ function entityMarker(p,label,color){dynamic.push(viewer.entities.add({position:
 function draw(){
   if(!geo)return;
   const incidents=(state?.incidents||[]).filter(r=>!['REJECTED','RESOLVED'].includes(r.status)),hospitals=state?.hospitals||[],r=state?.recommendation,amb=state?.ambulance;
-  const traffic=(state?.traffic?.observations||[]).filter(row=>row.observation_kind!=='INCIDENT'||row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing);
+  const traffic=(state?.traffic?.observations||[]).filter(row=>row.incident_type!=='ROAD_REOPENED'&&(row.incident_type!=='ROAD_CLOSURE'||row.eligible_for_routing));
   if(useFallback){
     if(!listChanged('svgMap',{viewBounds,tilesEnabled,pin,incidents,hospitals:hospitals.map(h=>[h.id,h.coordinates]),route:r&&!['UNAVAILABLE','CANCELLED'].includes(r.status)?r.geometry:null,amb,traffic:traffic.map(row=>[row.road_geometry,row.incident_type,row.eligible_for_routing,row.freshness_status])}))return;
     const svg=$('fallback');svg.setAttribute('viewBox','0 0 1000 '+svgHeight());svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.replaceChildren();svgTiles(svg);
     const pilot=[geo.bounds.slice(0,2),[geo.bounds[2],geo.bounds[1]],geo.bounds.slice(2),[geo.bounds[0],geo.bounds[3]],geo.bounds.slice(0,2)];
     svgLine(svg,pilot,{fill:'none',stroke:'#e7b668','stroke-width':2,'stroke-dasharray':'8 5'});
     for(const road of Object.values(geo.roads))svgLine(svg,road.coordinates,{class:'road'});
-    for(const row of traffic){if(row.road_geometry?.length>1)svgLine(svg,row.road_geometry,{fill:'none',stroke:row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0','stroke-width':4,'stroke-dasharray':row.freshness_status==='FRESH'?'':'6 4'});}
+    for(const row of traffic){if(row.road_geometry?.length>1){svgLine(svg,row.road_geometry,{fill:'none',stroke:row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0','stroke-width':4,'stroke-dasharray':row.freshness_status==='FRESH'?'':'6 4'});if(row.incident_type)marker(svg,row.road_geometry[0],`${row.source_type} · ${row.provider} ${row.incident_type} · ${row.freshness_status}`,'incident');}}
     if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)svgLine(svg,edge.coordinates,{class:'route'});
     hospitals.forEach(h=>marker(svg,h.coordinates,h.name,'hospital'));incidents.forEach(i=>marker(svg,i.coordinates,'TEST '+i.status,'incident'));
     if(amb)marker(svg,amb.position.coordinates,'USER_SELECTED','ambulance');if(pin)marker(svg,pin,'Selected pin','incident');
@@ -85,6 +85,7 @@ function draw(){
     dynamic.forEach(e=>viewer.entities.remove(e));dynamic=[];
     if(r&&!['UNAVAILABLE','CANCELLED'].includes(r.status))for(const edge of r.geometry)dynamic.push(viewer.entities.add({polyline:{positions:mapLine(edge.coordinates,4),width:6,material:Cesium.Color.fromCssColorString('#39e4cd')}}));
     for(const row of traffic)if(row.road_geometry?.length>1)dynamic.push(viewer.entities.add({polyline:{positions:mapLine(row.road_geometry,8),width:5,material:Cesium.Color.fromCssColorString(row.incident_type==='ROAD_CLOSURE'&&row.eligible_for_routing?'#ffcf70':'#b28bf0')}}));
+    for(const row of traffic)if(row.incident_type&&row.road_geometry?.length)entityMarker(row.road_geometry[0],`${row.source_type} · ${row.provider} ${row.incident_type} · ${row.freshness_status}`,'#ffcf70');
     hospitals.forEach(h=>entityMarker(h.coordinates,h.name,'#79dfad'));incidents.forEach(i=>entityMarker(i.coordinates,'TEST INCIDENT','#ff8a7b'));
     if(amb)entityMarker(amb.position.coordinates,'USER_SELECTED','#ffd570');if(pin)entityMarker(pin,'Selected pin','#ff8a7b');viewer.scene.requestRender();
   }
@@ -95,11 +96,11 @@ function render(){
   $('operator-panel').hidden=role!=='operator';$('hospital-form').hidden=role!=='hospital';$('traffic-test-panel').hidden=role!=='operator'||!s.traffic.offline_test_enabled;
   $('facility').textContent=facility||'';
   $('traffic-source').textContent=s.traffic.source;
-  $('traffic-status').textContent='No actual traffic-provider connection. '+s.provider_access+' · active test closures: '+(s.traffic.active_closures?.length||0);
+  $('traffic-status').textContent=(s.traffic.live_verified?'Validated genuine HERE observations; estimates remain unvalidated. ':'No verified live-provider connection. ')+s.provider_access+' · active closures: '+(s.traffic.active_closures?.length||0)+(s.traffic.provider?' · '+s.traffic.provider+': '+s.traffic.providers?.HERE:'')+(s.traffic.last_update?' · last successful update '+s.traffic.last_update:'')+(s.traffic.accounting?' · transaction budget '+JSON.stringify(s.traffic.accounting):'');
   $('coverage').textContent='Routing bounds: '+geo.bounds.join(', ')+' · display does not imply routing coverage.';
   if(listChanged('traffic',s.traffic)){
   $('traffic-rows').replaceChildren();
-  for(const row of s.traffic.observations||[])item($('traffic-rows'),`${row.provider_segment_id} · ${row.source_type}`,[`${row.freshness_status} · ${row.matching_status} · ${row.incident_type||'FLOW'}`,`Source time: ${row.observation_timestamp||'UNKNOWN'} · retrieved: ${row.retrieved_at}`]);
+  for(const row of s.traffic.observations||[])item($('traffic-rows'),`${row.provider_segment_id} · ${row.source_type}`,[`${row.freshness_status} · ${row.matching_status} · ${row.incident_type||'FLOW'} · ${row.validation_status||'UNKNOWN'}`,`Speed: ${row.current_speed??'UNKNOWN'} m/s · free-flow: ${row.free_flow_speed??'UNKNOWN'} m/s · congestion: ${row.congestion??'UNKNOWN'}`,`Direction: ${row.direction} · match coverage: ${row.matching_coverage??'UNKNOWN'} · road coverage: ${JSON.stringify(row.edge_coverages||{})}`,`Source time: ${row.observation_timestamp||'UNKNOWN'} · retrieved: ${row.retrieved_at}`]);
   if(s.traffic.quarantine_count)item($('traffic-rows'),'UNKNOWN · FUTURE CLOCK QUARANTINED',[String(s.traffic.quarantine_count)+' invalid record(s); last valid current observation preserved.']);
   }
   if(listChanged('hospitals',s.hospitals)){
@@ -112,7 +113,7 @@ function render(){
   }
   $('position').textContent=s.ambulance?`USER_SELECTED · ${s.ambulance.position.edge} · snap ${s.ambulance.position.distance_m.toFixed(1)} m · ${s.ambulance.position.confidence}`:'USER_SELECTED position required.';
   $('recommendation').replaceChildren();const r=s.recommendation;
-  if(r){item($('recommendation'),r.status,[r.reason,`${(r.eta_seconds/60).toFixed(1)} min · ${r.eta_label}`,`${r.estimated_edges} estimated edges / ${r.observed_edges} offline-observed edges`,r.assumptions||'',r.execution||'']);}
+  if(r){item($('recommendation'),r.status,[r.reason,`${(r.eta_seconds/60).toFixed(1)} min · ${r.eta_label}`,`${r.estimated_edges} estimated edges / ${r.observed_edges} offline-observed edges`,r.assumptions||'',r.execution||'',`Decision: ${r.decision||'UNKNOWN'}`,`Coverage / ETA provenance: ${JSON.stringify(r.eta_provenance||{})}`,`Cost comparison: ${JSON.stringify(r.comparison||{})}`]);}
   $('history').textContent=JSON.stringify({history:s.history,agents:r?.agents},null,2);
   for(const b of document.querySelectorAll('[data-state]'))b.disabled=!r||!({PENDING_OPERATOR_REVIEW:['APPROVED','CANCELLED'],APPROVED:['ACKNOWLEDGED','CANCELLED'],ACKNOWLEDGED:['ARRIVAL_REPORTED','CANCELLED']}[r.status]||[]).includes(b.dataset.state);
   if(listChanged('testEdges',r?.route||[])){

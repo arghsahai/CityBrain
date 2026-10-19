@@ -12,7 +12,7 @@ from citybrain.agents.traffic_agent import TrafficAgent
 from citybrain.agents.police_agent import PoliceAgent
 from citybrain.agents.signal_agent import SignalAgent
 from citybrain.models.emergency import Emergency
-from .graph import PilotGraph, LiveError, coordinate
+from .graph import PilotGraph, LiveError, coordinate, route_provenance
 from .store import Store
 
 
@@ -217,7 +217,7 @@ class LiveService:
             else:
                 chosen=choices[0]  # Live suitability adapter: do not invent ICU availability.
             _,_,hospital,route=chosen
-        roads={eid:dict(congestion='UNKNOWN',to=self.graph.edges[eid]['to']) for eid in route['route']}
+        roads=self._traffic_roads(route['route'],costs)
         agents=dict(ambulance=asdict(selected),traffic=asdict(TrafficAgent().assess({'roads':roads})),
                     police=asdict(PoliceAgent().recommend(emergency)),signal=asdict(SignalAgent().recommend(route['route'],{'roads':roads})),
                     hospital=dict(reason='RECENT_STAFF_REPORT_AND_REACHABILITY' if hospital else 'NOT_REQUIRED_FOR_FIRST_LEG'))
@@ -236,8 +236,15 @@ class LiveService:
         return dict(route,incident_id=incident['id'],leg=body['leg'],hospital=hospital,
             position=self.ambulance['position'],agents=agents,traffic_source=traffic['source'])
 
+    def _traffic_roads(self,route,costs):
+        roads={}
+        for eid in route:
+            congestion=costs.get(eid,{}).get('congestion')
+            roads[eid]=dict(congestion='UNKNOWN' if congestion is None else 'HIGH' if congestion>=.7 else 'MEDIUM' if congestion>=.4 else 'LOW',to=self.graph.edges[eid]['to'])
+        return roads
+
     def _accept_candidate(self,result,reason):
-        self.current=dict(result,id=secrets.token_hex(8),status='PENDING_OPERATOR_REVIEW',reason=reason,updated_at=self.iso())
+        self.current=dict(result,decision='RECOMMEND_ALTERNATIVE' if self.current else 'INITIAL_RECOMMENDATION',id=secrets.token_hex(8),status='PENDING_OPERATOR_REVIEW',reason=reason,updated_at=self.iso())
         self.last_change=self.now()
         self.record_history('RECOMMENDED',reason,result['route'])
         return self.current
@@ -262,6 +269,10 @@ class LiveService:
             improvement=old_seconds-candidate['eta_seconds']
             eligible=force or blocked or old.get('status') in {'UNAVAILABLE','CANCELLED'} or (
                 changed and self.now()-(self.last_change or 0)>=60 and improvement>=max(30,old_seconds*.1))
+            comparison=dict(current_cost_seconds=None if blocked or not math.isfinite(old_seconds) else old_seconds,
+                alternative_cost_seconds=candidate['eta_seconds'],improvement_seconds=None if blocked or not math.isfinite(improvement) else improvement,
+                current_route_invalid=bool(blocked),cooldown_seconds=60,minimum_improvement_seconds=30,minimum_improvement_fraction=.1)
+            candidate['comparison']=comparison
             if eligible:
                 return self._accept_candidate(candidate,trigger)
             # Same route refreshes provenance/ETA without retaining approval on
@@ -277,13 +288,22 @@ class LiveService:
                 self.current['traffic_source']=candidate['traffic_source']
                 for c in self.current['components']:
                     row=costs.get(c['edge'],{})
-                    c.update(seconds=row.get('seconds',self.graph.edges[c['edge']]['length']/self.graph.edges[c['edge']]['speed'])*c['fraction'],source=row.get('source','ESTIMATED_FREE_FLOW'),freshness=row.get('freshness','UNKNOWN'))
+                    c.update(seconds=row.get('seconds',self.graph.edges[c['edge']]['length']/self.graph.edges[c['edge']]['speed'])*c['fraction'],source=row.get('source','ESTIMATED_FREE_FLOW'),freshness=row.get('freshness','UNKNOWN'),
+                        source_time=row.get('source_time'),observation_id=row.get('observation_id'),coverage=row.get('coverage'))
                 if previous_components!=self.current['components']:
                     self.current.update(id=secrets.token_hex(8),status='PENDING_OPERATOR_REVIEW')
                 else:
                     self.current['status']=previous_status
                 self.current['estimated_edges']=sum(c['source']=='ESTIMATED_FREE_FLOW' for c in self.current['components'])
                 self.current['observed_edges']=len(self.current['components'])-self.current['estimated_edges']
+            self.current.update(decision='KEEP',comparison=comparison,eta_provenance=route_provenance(self.current['components']))
+            traffic=self._traffic()
+            assessment=asdict(TrafficAgent().assess({'roads':self._traffic_roads(self.current['route'],costs)}))
+            assessment.update(eligible_observations=sum(r.get('eligible_for_routing',False) for r in traffic['observations']),
+                route_cost_sources=sorted({c['source'] for c in self.current['components']}),
+                source=traffic['source'],source_updated_at=sorted({r['observation_timestamp'] for r in traffic['observations'] if r.get('eligible_for_routing') and r.get('observation_timestamp')}),
+                assessment_at=self.iso(),validity='PROTOTYPE_ADVISORY',missing='No field validation or authorized operational integration')
+            self.current['agents']=dict(self.current['agents'],traffic=assessment)
             self.record_history('KEEP',self.current['reason'])
             return self.current
 
@@ -310,7 +330,7 @@ class LiveService:
             if self.route_request:
                 self.reassess('FRESHNESS_REASSESSMENT')
             traffic=self._traffic()
-            return dict(mode='LIVE DATA',traffic=traffic,provider_access='DISABLED — NO AUTHORIZED API REQUESTS',
+            return dict(mode='LIVE DATA',traffic=traffic,provider_access=traffic.get('provider_access','DISABLED — NO AUTHORIZED API REQUESTS'),
                 hospitals=self.hospitals(),incidents=self.store.rows('incidents') if operator else [],
                 ambulance=self.ambulance if operator else None,recommendation=self.current if operator else None,
                 history=self.history if operator else [],signal='ADVISORY_ONLY',

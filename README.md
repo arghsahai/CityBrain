@@ -14,6 +14,10 @@ V3 below is preserved. The additive [V4 implementation PR #11 (merged)](https://
 
 [Setup](docs/V4_LIVE_DATA_SETUP.md) · [Actual status and testing gaps](docs/V4_FEATURE_STATUS.md) · [Architecture](docs/V4_ARCHITECTURE.md) · [Demos](docs/V4_DEMO_SCRIPT.md) · [Security/privacy](docs/V4_SECURITY_AND_PRIVACY.md). A new follow-up verifies the offline browser workflow and fixes Cesium display defects; see [20 October synchronization and validation](docs/V4_SYNCHRONIZATION_20261020.md). Remaining browser/operational gates are documented; the follow-up PR stays draft. Do not use it for actual emergency operations.
 
+## V4.2 HERE traffic milestone
+
+[HERE ingestion and routing](docs/V42_HERE_TRAFFIC.md) adds an offline-verified path from HERE v7 flow/incidents through matching/freshness to live recommendation costs, coverage and dynamic reassessment. HERE is primary; alternative adapters are retained. Default requests are disabled, mocked/recorded data is REPLAY, and no genuine provider verification is claimed. Separate licensing, budget, credentials and explicit request authorization are required before any real transaction. This milestone branches from Draft PR #12 and does not merge it.
+
 ## What is implemented
 
 - Chennai-area OSM road geometry and geographic projection, SUMO background vehicles, ambulance movement, simulated incidents, configured hospitals and signal telemetry.

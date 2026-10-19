@@ -120,7 +120,7 @@ def main():
             for condition, count in [('CLOSURE',1),('REOPEN',0),('CLOSURE',1)]:
                 service.traffic.inject({'edge':edge,'condition':condition})
                 page.evaluate('refresh()')
-                expect(page.locator('#traffic-status')).to_contain_text(f'active test closures: {count}')
+                expect(page.locator('#traffic-status')).to_contain_text(f'active closures: {count}')
                 assert page.locator('#fallback polyline[stroke="#ffcf70"]').count()==count
                 transitions.append(count)
             report['closure_overlays']=transitions
@@ -130,7 +130,7 @@ def main():
             assert len(service.traffic.snapshot()['active_closures'])==1
             service.traffic.inject({'edge':edge,'condition':'REOPEN'})
             page.evaluate('refresh()')
-            expect(page.locator('#traffic-status')).to_contain_text('active test closures: 0')
+            expect(page.locator('#traffic-status')).to_contain_text('active closures: 0')
             report['future_quarantine_and_recovery']=True
             page.screenshot(path=str(args.output/'desktop.png'), full_page=True)
             report['layouts']={}
