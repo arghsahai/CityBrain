@@ -74,7 +74,11 @@ def make_server(service=None,credentials=None,port=8784):
             self.connection.settimeout(5)
 
         def reply(self,value,status=200,kind='application/json'):
-            payload=json.dumps(value,allow_nan=False).encode() if kind=='application/json' else value
+            # Static JSON assets are already encoded; only API objects need serialization.
+            if kind=='application/json' and not isinstance(value,bytes):
+                payload=json.dumps(value,allow_nan=False).encode()
+            else:
+                payload=value
             self.send_response(status)
             self.send_header('Content-Type',kind)
             self.send_header('Content-Length',str(len(payload)))

@@ -35,3 +35,15 @@ venv/bin/python -m citybrain.live --mode simulation --seed 17
 ```
 
 The dashboard mode links target the default local ports: simulation 8770, V4 live 8784. A link opens the other viewer; it does not start its process. Run both services separately to switch between them. Custom ports require opening the printed URL directly.
+
+## Optional repeatable offline browser QA
+
+With an installed Chrome channel and the optional `playwright` Python package:
+
+```sh
+venv/bin/python -m pip install playwright
+V4_BROWSER_ROOT="$(mktemp -d /tmp/citybrain-v4-browser.XXXXXX)"
+venv/bin/python tools/check_live_browser.py --output "$V4_BROWSER_ROOT/check"
+```
+
+This starts and stops its own disposable loopback service, uses ephemeral tokens and an in-memory store, and blocks every external browser request. No SUMO or provider process is launched. It checks native SVG map-pin reporting, verification, position/direction, estimated route, closure overlays, timestamp recovery, hospital portal, logout, mobile layouts and available Cesium coordinate alignment. Browser artifacts are written only to the new output directory; tokens are not saved. See the [fresh audit and remaining limits](V4_SYNCHRONIZATION_20261020.md).
