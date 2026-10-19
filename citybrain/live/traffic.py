@@ -89,6 +89,9 @@ class OfflineTraffic:
         self.service.poll_once()
         return self.snapshot()
 
+    def source_label(self,row):
+        return 'SYNTHETIC_TEST' if row['source_type']=='SYNTHETIC_SAMPLE' else 'RECORDED_PROVIDER_REPLAY'
+
     def snapshot(self):
         if self.recording and (self.last_poll is None or (self.clock()-self.last_poll).total_seconds()>=1):
             self.service.poll_once()
@@ -98,11 +101,14 @@ class OfflineTraffic:
         # Oldest first makes the newest eligible flow win deterministically.
         rows=sorted(snapshot['observations'],key=lambda r:(r['observation_timestamp'] or '',r['observation_id']))
         for row in rows:
-            row['source_type']='SYNTHETIC_TEST' if row['source_type']=='SYNTHETIC_SAMPLE' else 'RECORDED_PROVIDER_REPLAY'
+            row['source_type']=self.source_label(row)
             row['live_verified']=False
             eligible=row['matching_status']=='MATCHED' and row['freshness_status']=='FRESH' and row['direction']=='FORWARD'
             row['eligible_for_routing']=False
             row['edge_coverages']={}
+            row['validation_status']='INELIGIBLE'
+            if any(q in row.get('quality',[]) for q in ('SUBSEGMENT_COST_NOT_SUPPORTED','INVALID_INCIDENT_END_TIME','NON_REALTIME_OR_UNKNOWN_CONFIDENCE','OUTSIDE_QUERY_AREA','INCIDENT_NOT_YET_ACTIVE')):
+                eligible=False
             if not eligible:
                 continue
             for eid in row['matched_sumo_edges']:
@@ -112,10 +118,10 @@ class OfflineTraffic:
                 row['edge_coverages'][eid]=coverage
                 if coverage < .95:
                     continue  # Partial measurements stay visible, not full-road costs.
+                if row['incident_type']=='ROAD_CLOSURE':
+                    costs.setdefault(eid,{}).update(blocked=True,reason='VALIDATED_CLOSURE',source=row['source_type'],freshness='FRESH',source_time=row['observation_timestamp'])
+                    row['eligible_for_routing']=True
                 if row['observation_kind']=='INCIDENT':
-                    if row['incident_type']=='ROAD_CLOSURE':
-                        costs.setdefault(eid,{})['blocked']=True
-                        row['eligible_for_routing']=True
                     continue  # Reopening replaces its stream but invents no speed.
                 speed=row['current_speed']
                 if speed is None and row['current_travel_time'] and row['current_travel_time']>0:
@@ -129,8 +135,13 @@ class OfflineTraffic:
                     continue
                 if speed is not None and 0<speed<=70:
                     costs.setdefault(eid,{}).update(seconds=self.graph.edges[eid]['length']/speed,
-                        source=row['source_type'],freshness='FRESH',source_time=row['observation_timestamp'])
+                        source=row['source_type'],freshness='FRESH',source_time=row['observation_timestamp'],
+                        congestion=row['congestion'],current_speed=speed,free_flow_speed=row['free_flow_speed'],
+                        observation_id=row['observation_id'],coverage=coverage)
                     row['eligible_for_routing']=True
+        for row in rows:
+            if row['eligible_for_routing']:
+                row['validation_status']='ELIGIBLE'
         # Closure markers are current incident states, never historical events.
         active=[r for r in rows if r['incident_type']=='ROAD_CLOSURE' and r['eligible_for_routing']]
         providers={name:('CONFIGURED_NOT_VERIFIED' if os.environ.get(name+'_API_KEY') else 'NOT_CONFIGURED') for name in ('HERE','TOMTOM')}

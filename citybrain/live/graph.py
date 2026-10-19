@@ -12,6 +12,18 @@ from citybrain.planner.route_scorer import RouteScorer
 from citybrain.planner.plan_validator import PlanValidator
 
 
+def route_provenance(components):
+    total=sum(c['distance_m'] for c in components)
+    observed=sum(c['distance_m'] for c in components if c['source']!='ESTIMATED_FREE_FLOW')
+    return dict(observed_distance_m=observed,estimated_distance_m=max(0,total-observed),
+        observed_fraction=observed/total if total else 0,
+        estimated_fraction=(total-observed)/total if total else 0,
+        source_times=sorted({c['source_time'] for c in components if c.get('source_time')}),
+        sources=sorted({c['source'] for c in components}),
+        label='TRAFFIC_ASSISTED_ESTIMATE' if observed else 'ESTIMATED_FREE_FLOW',
+        field_validated=False)
+
+
 class LiveError(ValueError):
     def __init__(self, code, detail=None):
         self.code, self.detail = code, detail
@@ -145,7 +157,8 @@ class PilotGraph:
             row = costs.get(eid,{})
             seconds_used = seconds(eid)*fraction
             component = dict(edge=eid,seconds=seconds_used,source=row.get('source','ESTIMATED_FREE_FLOW'),
-                freshness=row.get('freshness','UNKNOWN'),fraction=fraction,
+                freshness=row.get('freshness','UNKNOWN'),source_time=row.get('source_time'),
+                observation_id=row.get('observation_id'),coverage=row.get('coverage'),fraction=fraction,
                 distance_m=self.edges[eid]['length']*fraction)
             components.append(component)
             rendered.append(dict(edge=eid,coordinates=self.clipped(eid,lo,hi)))
@@ -160,7 +173,7 @@ class PilotGraph:
         if not scored.usable or not valid.valid:
             raise LiveError('INVALID_ROUTE_COST')
         return dict(route=path,geometry=rendered,eta_seconds=total,
-            eta_label='ESTIMATE — NOT FIELD VALIDATED',components=components,
+            eta_label='ESTIMATE — NOT FIELD VALIDATED',components=components,eta_provenance=route_provenance(components),
             estimated_edges=sum(c['source']=='ESTIMATED_FREE_FLOW' for c in components),
             observed_edges=sum(c['source']!='ESTIMATED_FREE_FLOW' for c in components),
             connectivity='LEGAL_PASSENGER_CONNECTIONS',execution='RECOMMENDATION_ONLY',
